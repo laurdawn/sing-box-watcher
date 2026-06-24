@@ -6,7 +6,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/sagernet/sing-box/daemon"
+	"github.com/laurdawn/sing-box-watcher/internal/daemon"
 	"github.com/laurdawn/sing-box-watcher/internal/store"
 )
 

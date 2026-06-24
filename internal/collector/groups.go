@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sagernet/sing-box/daemon"
+	"github.com/laurdawn/sing-box-watcher/internal/daemon"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
