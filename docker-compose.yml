@@ -1,0 +1,10 @@
+services:
+  sing-box-watcher:
+    build: .
+    image: sing-box-watcher:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./data:/app/data
+    restart: unless-stopped
