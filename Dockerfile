@@ -1,22 +1,25 @@
-# Stage 1: 构建前端
-FROM node:20-alpine AS frontend
+# Stage 1: 构建前端（原生 amd64，不需要 QEMU）
+FROM --platform=linux/amd64 node:20-alpine AS frontend
 WORKDIR /app/web
 COPY web/package*.json ./
 RUN npm ci
 COPY web/ ./
 RUN npm run build
 
-# Stage 2: 构建 Go（带嵌入前端）
-FROM golang:1.26-alpine AS builder
+# Stage 2: 交叉编译 Go（原生 amd64 跑编译，输出目标平台二进制）
+FROM --platform=linux/amd64 golang:1.26-alpine AS builder
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-# 将前端产物复制到 embed 目录
 COPY --from=frontend /app/web/dist ./internal/webfs/dist
-RUN CGO_ENABLED=0 go build -tags=prod -ldflags="-s -w" -o watcher ./cmd/watcher
+# TARGETOS/TARGETARCH 由 docker buildx 自动注入
+ARG TARGETOS=linux
+ARG TARGETARCH=amd64
+RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
+    go build -tags=prod -ldflags="-s -w" -o watcher ./cmd/watcher
 
-# Stage 3: 最终镜像 (~20MB)
+# Stage 3: 最终镜像（目标平台）
 FROM alpine:3.20
 RUN apk add --no-cache ca-certificates tzdata
 WORKDIR /app
