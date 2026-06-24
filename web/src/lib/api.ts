@@ -148,6 +148,8 @@ export const api = {
     to?: number
     page?: number
     limit?: number
+    sort_by?: string
+    sort_dir?: string
   }) => get<ConnectionsResponse>('/api/connections', params as Record<string, string | number>),
 
   activeConnections: (instance: string) =>

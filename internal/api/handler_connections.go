@@ -27,6 +27,8 @@ func (s *Server) handleConnections(w http.ResponseWriter, r *http.Request) {
 		To:           to,
 		Page:         page,
 		Limit:        limit,
+		SortBy:       q.Get("sort_by"),
+		SortDir:      q.Get("sort_dir"),
 	}
 
 	conns, total, err := store.QueryConnections(s.db, f)

@@ -3,16 +3,36 @@ import { Connection } from '@/lib/api'
 import { formatBytes, formatTime } from '@/lib/utils'
 import { useGeo, geoLabel, GeoInfo } from '@/hooks/useGeo'
 
+type SortField = 'upload' | 'download' | ''
+type SortDir = 'asc' | 'desc'
+
 interface Props {
   connections: Connection[]
   total?: number
   page?: number
   limit?: number
   onPageChange?: (page: number) => void
+  sortBy?: SortField
+  sortDir?: SortDir
+  onSortChange?: (field: SortField, dir: SortDir) => void
 }
 
-export function ConnectionTable({ connections, total = 0, page = 1, limit = 20, onPageChange }: Props) {
+export function ConnectionTable({ connections, total = 0, page = 1, limit = 20, onPageChange, sortBy = '', sortDir = 'desc', onSortChange }: Props) {
   const totalPages = Math.ceil(total / limit)
+
+  const handleSort = (field: SortField) => {
+    if (!onSortChange) return
+    if (sortBy === field) {
+      onSortChange(field, sortDir === 'desc' ? 'asc' : 'desc')
+    } else {
+      onSortChange(field, 'desc')
+    }
+  }
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortBy !== field) return <span className="ml-1 opacity-30">⇅</span>
+    return <span className="ml-1">{sortDir === 'desc' ? '↓' : '↑'}</span>
+  }
 
   // 收集所有需要查询的 IP
   const ips = useMemo(() =>
@@ -33,8 +53,22 @@ export function ConnectionTable({ connections, total = 0, page = 1, limit = 20, 
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">目标</th>
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">出站</th>
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">规则</th>
-              <th className="text-right px-4 py-3 font-medium text-muted-foreground">上传</th>
-              <th className="text-right px-4 py-3 font-medium text-muted-foreground">下载</th>
+              <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                <button
+                  onClick={() => handleSort('upload')}
+                  className="inline-flex items-center hover:text-foreground transition-colors"
+                >
+                  上传<SortIcon field="upload" />
+                </button>
+              </th>
+              <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+                <button
+                  onClick={() => handleSort('download')}
+                  className="inline-flex items-center hover:text-foreground transition-colors"
+                >
+                  下载<SortIcon field="download" />
+                </button>
+              </th>
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">进程</th>
             </tr>
           </thead>

@@ -66,6 +66,8 @@ type ConnectionFilter struct {
 	ActiveOnly   bool
 	Page         int
 	Limit        int
+	SortBy       string // "upload" | "download" | ""
+	SortDir      string // "asc" | "desc"
 }
 
 func QueryConnections(db *sql.DB, f ConnectionFilter) ([]Connection, int, error) {
@@ -85,10 +87,20 @@ func QueryConnections(db *sql.DB, f ConnectionFilter) ([]Connection, int, error)
 	}
 	offset := (f.Page - 1) * f.Limit
 
+	orderBy := " ORDER BY started_at DESC"
+	allowedSortCols := map[string]bool{"upload": true, "download": true}
+	if allowedSortCols[f.SortBy] {
+		dir := "DESC"
+		if f.SortDir == "asc" {
+			dir = "ASC"
+		}
+		orderBy = fmt.Sprintf(" ORDER BY %s %s", f.SortBy, dir)
+	}
+
 	querySQL := `SELECT id, instance, network, inbound, inbound_type, outbound, outbound_type,
 		source_ip, source_port, dest_ip, dest_port, host, process_path, rule, chains,
 		upload, download, started_at, closed_at
-		FROM connections` + where + ` ORDER BY started_at DESC LIMIT ? OFFSET ?`
+		FROM connections` + where + orderBy + ` LIMIT ? OFFSET ?`
 	args = append(args, f.Limit, offset)
 
 	rows, err := db.Query(querySQL, args...)

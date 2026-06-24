@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Legend,
+  Tooltip, ResponsiveContainer, Legend, ReferenceArea,
 } from 'recharts'
 import { api, TrafficPoint } from '@/lib/api'
 import { formatBytes } from '@/lib/utils'
 
 interface Props {
   instance: string
+  onRangeSelect?: (from: number, to: number) => void
 }
 
 type Range = '1h' | '6h' | '24h' | '7d'
@@ -25,9 +26,15 @@ function formatXTick(ts: number, range: Range) {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-export function TrafficChart({ instance }: Props) {
+export function TrafficChart({ instance, onRangeSelect }: Props) {
   const [range, setRange] = useState<Range>('1h')
   const [points, setPoints] = useState<TrafficPoint[]>([])
+
+  // drag selection state
+  const [dragStart, setDragStart] = useState<number | null>(null)
+  const [dragEnd, setDragEnd] = useState<number | null>(null)
+  const [selection, setSelection] = useState<{ from: number; to: number } | null>(null)
+  const isDragging = useRef(false)
 
   useEffect(() => {
     const load = async () => {
@@ -44,10 +51,65 @@ export function TrafficChart({ instance }: Props) {
     return () => clearInterval(t)
   }, [instance, range])
 
+  // clear selection when range changes
+  useEffect(() => {
+    setDragStart(null)
+    setDragEnd(null)
+    setSelection(null)
+  }, [range, instance])
+
+  const handleMouseDown = (e: { activeLabel?: number | string }) => {
+    if (e?.activeLabel == null) return
+    const ts = Number(e.activeLabel)
+    isDragging.current = true
+    setDragStart(ts)
+    setDragEnd(ts)
+    setSelection(null)
+  }
+
+  const handleMouseMove = (e: { activeLabel?: number | string }) => {
+    if (!isDragging.current || e?.activeLabel == null) return
+    setDragEnd(Number(e.activeLabel))
+  }
+
+  const handleMouseUp = () => {
+    if (!isDragging.current) return
+    isDragging.current = false
+    if (dragStart != null && dragEnd != null && dragStart !== dragEnd) {
+      const from = Math.min(dragStart, dragEnd)
+      const to = Math.max(dragStart, dragEnd)
+      setSelection({ from, to })
+      onRangeSelect?.(from, to)
+    }
+    setDragStart(null)
+    setDragEnd(null)
+  }
+
+  const selFrom = dragStart != null && dragEnd != null
+    ? Math.min(dragStart, dragEnd)
+    : selection?.from
+
+  const selTo = dragStart != null && dragEnd != null
+    ? Math.max(dragStart, dragEnd)
+    : selection?.to
+
   return (
     <div className="rounded-xl border bg-card p-5 shadow-sm">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-medium">流量历史</h3>
+        <div className="flex items-center gap-3">
+          <h3 className="font-medium">流量历史</h3>
+          {selection && onRangeSelect && (
+            <span className="text-xs text-muted-foreground">
+              已选区间 ·{' '}
+              <button
+                onClick={() => setSelection(null)}
+                className="text-primary hover:underline"
+              >
+                清除
+              </button>
+            </span>
+          )}
+        </div>
         <div className="flex gap-1">
           {RANGES.map(r => (
             <button
@@ -64,8 +126,18 @@ export function TrafficChart({ instance }: Props) {
           ))}
         </div>
       </div>
+      {onRangeSelect && (
+        <p className="text-xs text-muted-foreground mb-2">拖拽图表选择时间区间，自动筛选连接</p>
+      )}
       <ResponsiveContainer width="100%" height={240}>
-        <AreaChart data={points} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+        <AreaChart
+          data={points}
+          margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          style={{ userSelect: 'none' }}
+        >
           <defs>
             <linearGradient id="colorUp" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
@@ -108,6 +180,15 @@ export function TrafficChart({ instance }: Props) {
           />
           <Area type="monotone" dataKey="upload" stroke="#6366f1" strokeWidth={2} fill="url(#colorUp)" />
           <Area type="monotone" dataKey="download" stroke="#10b981" strokeWidth={2} fill="url(#colorDown)" />
+          {selFrom != null && selTo != null && selFrom !== selTo && (
+            <ReferenceArea
+              x1={selFrom}
+              x2={selTo}
+              strokeOpacity={0.3}
+              fill="hsl(var(--primary))"
+              fillOpacity={0.15}
+            />
+          )}
         </AreaChart>
       </ResponsiveContainer>
     </div>
