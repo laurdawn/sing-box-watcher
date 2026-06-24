@@ -3,6 +3,6 @@ web/node_modules/
 web/dist/
 internal/webfs/dist/
 *.db
-watcher
+/watcher
 config.yaml
 web/tsconfig.tsbuildinfo
