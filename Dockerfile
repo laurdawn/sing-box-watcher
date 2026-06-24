@@ -14,8 +14,8 @@ RUN go mod download
 COPY . .
 COPY --from=frontend /app/web/dist ./internal/webfs/dist
 # TARGETOS/TARGETARCH 由 docker buildx 自动注入
-ARG TARGETOS=linux
-ARG TARGETARCH=amd64
+ARG TARGETOS
+ARG TARGETARCH
 RUN CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build -tags=prod -ldflags="-s -w" -o watcher ./cmd/watcher
 
