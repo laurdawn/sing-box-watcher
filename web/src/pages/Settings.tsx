@@ -12,10 +12,11 @@ interface ConfigData {
   geo_db_path: string
   geo_db_url: string
   instances: Instance[]
+  mcp_enabled: boolean
 }
 
 const emptyInstance = (): Instance => ({ name: '', api: '', secret: '' })
-const defaultCfg = (): ConfigData => ({ retention_days: 7, geo_db_path: '', geo_db_url: '', instances: [] })
+const defaultCfg = (): ConfigData => ({ retention_days: 7, geo_db_path: '', geo_db_url: '', instances: [], mcp_enabled: false })
 
 export function Settings() {
   const [cfg, setCfg] = useState<ConfigData>(defaultCfg())
@@ -183,6 +184,32 @@ export function Settings() {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* AI / MCP */}
+      <div>
+        <h2 className="text-base font-semibold mb-1">AI / MCP</h2>
+        <p className="text-sm text-muted-foreground mb-4">启用后可通过 MCP 协议让 AI 直接分析流量和连接数据。</p>
+        <div className="rounded-xl border bg-card p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">MCP Server</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                地址：<span className="font-mono">{window.location.origin}/mcp</span>
+              </p>
+            </div>
+            <button
+              role="switch"
+              aria-checked={cfg.mcp_enabled}
+              onClick={() => setCfg(prev => ({ ...prev, mcp_enabled: !prev.mcp_enabled }))}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${cfg.mcp_enabled ? 'bg-primary' : 'bg-muted'}`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${cfg.mcp_enabled ? 'translate-x-6' : 'translate-x-1'}`}
+              />
+            </button>
+          </div>
         </div>
       </div>
 

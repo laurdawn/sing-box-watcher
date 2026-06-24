@@ -48,5 +48,12 @@ func (s *Server) handleSaveConfig(w http.ResponseWriter, r *http.Request) {
 
 	s.manager.Reload(body.Instances)
 
+	// 热重载 MCP 开关
+	if body.MCPEnabled {
+		s.mcpGate.enable("http://" + s.cfg.Listen)
+	} else {
+		s.mcpGate.disable()
+	}
+
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }

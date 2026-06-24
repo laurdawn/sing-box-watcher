@@ -12,6 +12,7 @@ type Settings struct {
 	GeoDBPath     string     `json:"geo_db_path"`
 	GeoDBURL      string     `json:"geo_db_url"`
 	Instances     []Instance `json:"instances"`
+	MCPEnabled    bool       `json:"mcp_enabled"`
 }
 
 type Instance struct {

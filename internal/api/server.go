@@ -10,19 +10,55 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/laurdawn/sing-box-watcher/internal/collector"
 	"github.com/laurdawn/sing-box-watcher/internal/config"
+	internalmcp "github.com/laurdawn/sing-box-watcher/internal/mcp"
 	"github.com/laurdawn/sing-box-watcher/internal/store"
 )
 
 type Server struct {
-	cfg      *config.Config
-	db       *sql.DB
-	settings *store.Settings
+	cfg        *config.Config
+	db         *sql.DB
+	settings   *store.Settings
 	settingsMu sync.RWMutex
-	manager  *collector.Manager
+	manager    *collector.Manager
+	mcpGate    *mcpGate
+}
+
+// mcpGate holds a swappable MCP handler, returning 503 when disabled.
+type mcpGate struct {
+	mu      sync.RWMutex
+	handler http.Handler
+}
+
+func (g *mcpGate) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	g.mu.RLock()
+	h := g.handler
+	g.mu.RUnlock()
+	if h == nil {
+		http.Error(w, "MCP is disabled", http.StatusServiceUnavailable)
+		return
+	}
+	h.ServeHTTP(w, r)
+}
+
+func (g *mcpGate) enable(baseURL string) {
+	h := internalmcp.NewHandler(baseURL)
+	g.mu.Lock()
+	g.handler = h
+	g.mu.Unlock()
+}
+
+func (g *mcpGate) disable() {
+	g.mu.Lock()
+	g.handler = nil
+	g.mu.Unlock()
 }
 
 func NewServer(cfg *config.Config, db *sql.DB, settings *store.Settings, manager *collector.Manager) *Server {
-	return &Server{cfg: cfg, db: db, settings: settings, manager: manager}
+	s := &Server{cfg: cfg, db: db, settings: settings, manager: manager, mcpGate: &mcpGate{}}
+	if settings.MCPEnabled {
+		s.mcpGate.enable("http://" + cfg.Listen)
+	}
+	return s
 }
 
 func (s *Server) Handler(static http.FileSystem) http.Handler {
@@ -60,9 +96,12 @@ func (s *Server) Handler(static http.FileSystem) http.Handler {
 	r.Get("/ws/groups", s.handleWsGroups)
 	r.Get("/ws/log", s.handleWsLog)
 
+	r.Mount("/mcp", s.mcpGate)
+
 	if static != nil {
 		r.Handle("/*", http.FileServer(static))
 	}
 
 	return r
 }
+
