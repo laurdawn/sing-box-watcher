@@ -9,7 +9,8 @@ import (
 
 // NewHandler creates an MCP Streamable HTTP handler that proxies to the local API.
 // baseURL is the internal address of the watcher HTTP server (e.g. "http://localhost:8080").
-func NewHandler(baseURL string) http.Handler {
+// internalToken is used to authenticate internal API calls, bypassing cookie-based auth.
+func NewHandler(baseURL, internalToken string) http.Handler {
 	s := server.NewMCPServer(
 		"sing-box-watcher",
 		"1.0.0",
@@ -19,12 +20,12 @@ func NewHandler(baseURL string) http.Handler {
 				"Use list_instances first to discover available instances, then query data with other tools.",
 		),
 	)
-	registerTools(s, baseURL)
+	registerTools(s, baseURL, internalToken)
 	return server.NewStreamableHTTPServer(s)
 }
 
-func registerTools(s *server.MCPServer, baseURL string) {
-	c := &apiClient{baseURL: baseURL}
+func registerTools(s *server.MCPServer, baseURL, internalToken string) {
+	c := &apiClient{baseURL: baseURL, internalToken: internalToken}
 
 	s.AddTool(mcp.NewTool("list_instances",
 		mcp.WithDescription("List all monitored sing-box instances with their online status and current traffic."),

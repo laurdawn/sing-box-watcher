@@ -8,13 +8,22 @@ import (
 
 const cookieName = "watcher_session"
 
-func Middleware(store *Store) func(http.Handler) http.Handler {
+func Middleware(store *Store, getInternalToken func() string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// skip login endpoint (match with and without trailing slash)
 			if r.URL.Path == "/api/auth/login" || r.URL.Path == "/api/auth/login/" {
 				next.ServeHTTP(w, r)
 				return
+			}
+			// allow internal MCP calls authenticated with Bearer token
+			if getInternalToken != nil {
+				if tok := getInternalToken(); tok != "" {
+					if strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ") == tok {
+						next.ServeHTTP(w, r)
+						return
+					}
+				}
 			}
 			cookie, err := r.Cookie(cookieName)
 			if err != nil || !store.Valid(cookie.Value) {

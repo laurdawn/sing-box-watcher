@@ -42,8 +42,8 @@ func (g *mcpGate) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.ServeHTTP(w, r)
 }
 
-func (g *mcpGate) enable(baseURL string) {
-	h := internalmcp.NewHandler(baseURL)
+func (g *mcpGate) enable(baseURL, internalToken string) {
+	h := internalmcp.NewHandler(baseURL, internalToken)
 	g.mu.Lock()
 	g.handler = h
 	g.mu.Unlock()
@@ -65,7 +65,7 @@ func NewServer(cfg *config.Config, db *sql.DB, settings *store.Settings, manager
 		authStore: internalauth.NewStore(),
 	}
 	if settings.MCPEnabled {
-		s.mcpGate.enable("http://" + cfg.Listen)
+		s.mcpGate.enable("http://localhost"+cfg.Listen, settings.MCPToken)
 	}
 	return s
 }
@@ -87,7 +87,11 @@ func (s *Server) Handler(static http.FileSystem) http.Handler {
 
 	// protected API routes
 	r.Group(func(r chi.Router) {
-		r.Use(internalauth.Middleware(s.authStore))
+		r.Use(internalauth.Middleware(s.authStore, func() string {
+			s.settingsMu.RLock()
+			defer s.settingsMu.RUnlock()
+			return s.settings.MCPToken
+		}))
 		r.Route("/api", func(r chi.Router) {
 			r.Get("/instances", s.handleInstances)
 			r.Get("/traffic", s.handleTraffic)

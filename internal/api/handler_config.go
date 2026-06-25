@@ -53,7 +53,7 @@ func (s *Server) handleSaveConfig(w http.ResponseWriter, r *http.Request) {
 
 	// 热重载 MCP 开关
 	if body.MCPEnabled {
-		s.mcpGate.enable("http://" + s.cfg.Listen)
+		s.mcpGate.enable("http://localhost"+s.cfg.Listen, body.MCPToken)
 	} else {
 		s.mcpGate.disable()
 	}

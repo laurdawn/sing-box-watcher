@@ -13,12 +13,20 @@ import (
 )
 
 type apiClient struct {
-	baseURL string
-	http    http.Client
+	baseURL       string
+	internalToken string
+	http          http.Client
 }
 
 func (c *apiClient) get(path string) (string, error) {
-	resp, err := c.http.Get(c.baseURL + path)
+	req, err := http.NewRequest(http.MethodGet, c.baseURL+path, nil)
+	if err != nil {
+		return "", fmt.Errorf("build request: %w", err)
+	}
+	if c.internalToken != "" {
+		req.Header.Set("Authorization", "Bearer "+c.internalToken)
+	}
+	resp, err := c.http.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("request failed: %w", err)
 	}
@@ -38,7 +46,15 @@ func (c *apiClient) post(path string, payload any) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("marshal payload: %w", err)
 	}
-	resp, err := c.http.Post(c.baseURL+path, "application/json", strings.NewReader(string(data)))
+	req, err := http.NewRequest(http.MethodPost, c.baseURL+path, strings.NewReader(string(data)))
+	if err != nil {
+		return "", fmt.Errorf("build request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if c.internalToken != "" {
+		req.Header.Set("Authorization", "Bearer "+c.internalToken)
+	}
+	resp, err := c.http.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("request failed: %w", err)
 	}
