@@ -251,11 +251,19 @@ func (c *apiClient) getRecentLogs(_ context.Context, req mcp.CallToolRequest) (*
 }
 
 func (c *apiClient) lookupGeo(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	payload := map[string]string{"ip": req.GetString("ip", "")}
-	body, err := c.post("/api/geo/lookup", payload)
+	ip := req.GetString("ip", "")
+	body, err := c.post("/api/geo/lookup", []string{ip})
 	if err != nil {
 		return fail(err)
 	}
-	return ok(body)
+	// body is a map[ip]Info; extract the single entry
+	var result map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(body), &result); err != nil {
+		return ok(body)
+	}
+	if info, ok2 := result[ip]; ok2 {
+		return ok(string(info))
+	}
+	return ok("{}")
 }
 
