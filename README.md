@@ -44,17 +44,10 @@ cd web && npm install && npm run build && cd ..
 go build -o watcher ./cmd/watcher
 ```
 
-### 4. Configure
+### 4. Run
 
 ```bash
-cp config.example.yaml config.yaml
-# Edit config.yaml as needed
-```
-
-### 5. Run
-
-```bash
-./watcher -config config.yaml
+./watcher
 ```
 
 Open `http://localhost:8080` in your browser. Default credentials: `admin / admin`.
@@ -66,15 +59,6 @@ docker compose up -d
 ```
 
 See `docker-compose.yml` for configuration options.
-
-## Configuration
-
-`config.yaml` controls startup parameters only. All other settings (instances, retention days, GeoIP path, MCP token) are managed from the web UI and persisted to SQLite.
-
-| Field | Default | Description |
-|-------|---------|-------------|
-| `listen` | `:8080` | HTTP listen address |
-| `data_dir` | `./data` | Directory for database and GeoIP files |
 
 ## AI / MCP Integration
 
@@ -126,7 +110,7 @@ http://your-server:8080/mcp
 
 ```bash
 # Backend
-go run ./cmd/watcher -config config.yaml
+go run ./cmd/watcher
 
 # Frontend dev server (proxies /api and /ws to :8080)
 cd web && npm run dev

@@ -42,17 +42,10 @@ cd web && npm install && npm run build && cd ..
 go build -o watcher ./cmd/watcher
 ```
 
-### 4. 配置
+### 4. 运行
 
 ```bash
-cp config.example.yaml config.yaml
-# 按需修改 config.yaml
-```
-
-### 5. 运行
-
-```bash
-./watcher -config config.yaml
+./watcher
 ```
 
 浏览器访问 `http://localhost:8080`，默认账号：`admin / admin`，建议首次登录后修改密码。
@@ -64,15 +57,6 @@ docker compose up -d
 ```
 
 详见 `docker-compose.yml`。
-
-## 配置说明
-
-`config.yaml` 仅控制启动参数，其余配置（实例列表、数据保留天数、GeoIP 路径、MCP Token）在 Web 界面的设置页管理，自动持久化到 SQLite。
-
-| 字段 | 默认值 | 说明 |
-|------|--------|------|
-| `listen` | `:8080` | HTTP 监听地址 |
-| `data_dir` | `./data` | 数据库和 GeoIP 文件存放目录 |
 
 ## AI / MCP 集成
 
@@ -124,7 +108,7 @@ http://your-server:8080/mcp
 
 ```bash
 # 后端
-go run ./cmd/watcher -config config.yaml
+go run ./cmd/watcher
 
 # 前端开发服务器（自动代理 /api 和 /ws 到 :8080）
 cd web && npm run dev

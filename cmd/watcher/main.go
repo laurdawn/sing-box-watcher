@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"log"
 	"net/http"
 	"os"
@@ -20,13 +19,7 @@ import (
 )
 
 func main() {
-	cfgPath := flag.String("config", "config.yaml", "path to config file")
-	flag.Parse()
-
-	cfg, err := config.Load(*cfgPath)
-	if err != nil {
-		log.Fatalf("load config: %v", err)
-	}
+	cfg := config.Load()
 
 	if err := os.MkdirAll(cfg.DataDir, 0755); err != nil {
 		log.Fatalf("create data dir: %v", err)
