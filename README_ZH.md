@@ -1,76 +1,45 @@
 # sing-box-watcher
 
-为 [sing-box](https://github.com/SagerNet/sing-box) 设计的轻量级监控面板，通过 gRPC 采集流量、连接和代理分组数据，持久化存储到 SQLite。
+为 [sing-box](https://github.com/SagerNet/sing-box) 设计的轻量级监控面板，采集流量、连接和代理分组数据，持久化到 SQLite。
 
 ## 功能
 
 - 实时流量监控（WebSocket 推送）
 - 连接历史记录，支持全文搜索和多维度过滤
 - 来源 IP 地理位置分析（基于 GeoLite2）
-- 代理分组管理：查看延迟、手动选择节点、触发 URL 测速
-- 多实例支持：统一管理多台 sing-box 节点
-- 配置热重载：保存设置后无需重启
-- 登录认证：Session Cookie 鉴权 + MCP Bearer Token 支持
-- 日志持久化到 SQLite，支持按级别过滤和关键字搜索
-- 前端内嵌：单二进制文件部署
-- **MCP Server**：通过标准 MCP 协议让 AI 直接分析流量和连接数据
-
-## 环境要求
-
-- Go 1.21+
-- Node.js 18+（仅前端开发时需要）
-- sing-box 已启用 `experimental.clash_api`
+- 代理分组管理：查看延迟、选择节点、触发 URL 测速
+- 多实例支持，登录认证，配置热重载
+- 日志持久化，支持按级别过滤和关键字搜索
+- 前端内嵌，单二进制部署
+- **MCP Server**：让 AI（如 Claude）直接查询和分析流量数据
 
 ## 快速开始
-
-### 1. 克隆仓库
 
 ```bash
 git clone https://github.com/laurdawn/sing-box-watcher.git
 cd sing-box-watcher
-```
-
-### 2. 构建前端
-
-```bash
 cd web && npm install && npm run build && cd ..
-```
-
-### 3. 构建后端
-
-```bash
 go build -o watcher ./cmd/watcher
-```
-
-### 4. 运行
-
-```bash
 ./watcher
 ```
 
-浏览器访问 `http://localhost:8080`，默认账号：`admin / admin`，建议首次登录后修改密码。
+浏览器访问 `http://localhost:8080`，默认账号：`admin / admin`。
 
-## Docker 部署
+## Docker
 
 ```bash
 docker compose up -d
 ```
 
-详见 `docker-compose.yml`。
-
 ## AI / MCP 集成
 
-sing-box-watcher 内置 MCP Server，可让支持 MCP 协议的 AI（如 Claude）直接查询和分析数据。
-
-### 启用方式
-
-在设置页 **AI / MCP** 部分打开开关，复制生成的 Bearer Token。MCP Server 地址为：
+在设置页 **AI / MCP** 部分打开开关，复制 Bearer Token。MCP 地址：
 
 ```
 http://your-server:8080/mcp
 ```
 
-### Claude 配置示例
+Claude 配置示例：
 
 ```json
 {
@@ -78,49 +47,26 @@ http://your-server:8080/mcp
     "sing-box": {
       "type": "http",
       "url": "http://your-server:8080/mcp",
-      "headers": {
-        "Authorization": "Bearer <your-mcp-token>"
-      }
+      "headers": { "Authorization": "Bearer <your-mcp-token>" }
     }
   }
 }
 ```
 
-### 可用工具
+可用工具：`list_instances` · `get_service_info` · `query_traffic` · `query_connections` · `get_active_connections` · `get_recent_logs` · `get_top_domains` · `get_top_outbounds` · `get_source_regions` · `get_top_source_ips` · `list_proxy_groups` · `select_outbound` · `lookup_geo`
 
-| 工具 | 说明 |
-|------|------|
-| `list_instances` | 列出所有实例及在线状态和当前流量 |
-| `get_service_info` | 查看 sing-box 版本和运行时长 |
-| `query_traffic` | 按时间范围查询历史流量数据 |
-| `query_connections` | 分页查询连接记录，支持多维度过滤 |
-| `get_active_connections` | 获取当前活跃连接 |
-| `get_recent_logs` | 查询日志，支持级别过滤和关键字搜索 |
-| `get_top_domains` | 访问最多的域名排行 |
-| `get_top_outbounds` | 出站代理流量排行 |
-| `get_source_regions` | 来源 IP 地域分布 |
-| `get_top_source_ips` | 来源 IP 排行 |
-| `list_proxy_groups` | 代理分组及延迟信息 |
-| `select_outbound` | 切换代理节点 |
-| `lookup_geo` | IP 地理位置查询 |
-
-## 开发模式
+## 开发
 
 ```bash
-# 后端
-go run ./cmd/watcher
-
-# 前端开发服务器（自动代理 /api 和 /ws 到 :8080）
-cd web && npm run dev
+go run ./cmd/watcher          # 后端
+cd web && npm run dev         # 前端 → http://localhost:5173
 ```
-
-前端访问地址：`http://localhost:5173`
 
 ## 数据文件
 
 | 路径 | 说明 |
 |------|------|
-| `data/watcher.db` | SQLite 数据库（流量、连接、日志、设置） |
+| `data/watcher.db` | SQLite 数据库 |
 | `data/GeoLite2-City.mmdb` | GeoIP 数据库（首次启动自动下载） |
 
 ## License
