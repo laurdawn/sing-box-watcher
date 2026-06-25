@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/mark3labs/mcp-go/mcp"
@@ -72,7 +73,7 @@ func (c *apiClient) listInstances(_ context.Context, _ mcp.CallToolRequest) (*mc
 
 func (c *apiClient) getServiceInfo(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	instance := req.GetString("instance", "")
-	body, err := c.get("/api/service/info?instance=" + instance)
+	body, err := c.get("/api/service/info?instance=" + url.QueryEscape(instance))
 	if err != nil {
 		return fail(err)
 	}
@@ -83,7 +84,7 @@ func (c *apiClient) queryTraffic(_ context.Context, req mcp.CallToolRequest) (*m
 	instance := req.GetString("instance", "")
 	from := req.GetInt("from", 0)
 	to := req.GetInt("to", 0)
-	path := "/api/traffic?instance=" + instance
+	path := "/api/traffic?instance=" + url.QueryEscape(instance)
 	if from > 0 {
 		path += fmt.Sprintf("&from=%d", from)
 	}
@@ -99,24 +100,24 @@ func (c *apiClient) queryTraffic(_ context.Context, req mcp.CallToolRequest) (*m
 
 func (c *apiClient) queryConnections(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	instance := req.GetString("instance", "")
-	path := "/api/connections?instance=" + instance
+	path := "/api/connections?instance=" + url.QueryEscape(instance)
 	if v := req.GetString("search", ""); v != "" {
-		path += "&search=" + v
+		path += "&search=" + url.QueryEscape(v)
 	}
 	if v := req.GetString("inbound", ""); v != "" {
-		path += "&inbound=" + v
+		path += "&inbound=" + url.QueryEscape(v)
 	}
 	if v := req.GetString("outbound", ""); v != "" {
-		path += "&outbound=" + v
+		path += "&outbound=" + url.QueryEscape(v)
 	}
 	if v := req.GetString("rule", ""); v != "" {
-		path += "&rule=" + v
+		path += "&rule=" + url.QueryEscape(v)
 	}
 	if v := req.GetString("sort_by", ""); v != "" {
-		path += "&sort_by=" + v
+		path += "&sort_by=" + url.QueryEscape(v)
 	}
 	if v := req.GetString("sort_dir", ""); v != "" {
-		path += "&sort_dir=" + v
+		path += "&sort_dir=" + url.QueryEscape(v)
 	}
 	page := req.GetInt("page", 1)
 	limit := req.GetInt("limit", 20)
@@ -130,7 +131,7 @@ func (c *apiClient) queryConnections(_ context.Context, req mcp.CallToolRequest)
 
 func (c *apiClient) getActiveConnections(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	instance := req.GetString("instance", "")
-	body, err := c.get("/api/connections/active?instance=" + instance)
+	body, err := c.get("/api/connections/active?instance=" + url.QueryEscape(instance))
 	if err != nil {
 		return fail(err)
 	}
@@ -140,7 +141,7 @@ func (c *apiClient) getActiveConnections(_ context.Context, req mcp.CallToolRequ
 func (c *apiClient) getTopDomains(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	instance := req.GetString("instance", "")
 	hours := req.GetInt("hours", 24)
-	body, err := c.get(fmt.Sprintf("/api/stats/top-domains?instance=%s&hours=%d", instance, hours))
+	body, err := c.get(fmt.Sprintf("/api/stats/top-domains?instance=%s&hours=%d", url.QueryEscape(instance), hours))
 	if err != nil {
 		return fail(err)
 	}
@@ -150,7 +151,7 @@ func (c *apiClient) getTopDomains(_ context.Context, req mcp.CallToolRequest) (*
 func (c *apiClient) getTopOutbounds(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	instance := req.GetString("instance", "")
 	hours := req.GetInt("hours", 24)
-	body, err := c.get(fmt.Sprintf("/api/stats/top-outbounds?instance=%s&hours=%d", instance, hours))
+	body, err := c.get(fmt.Sprintf("/api/stats/top-outbounds?instance=%s&hours=%d", url.QueryEscape(instance), hours))
 	if err != nil {
 		return fail(err)
 	}
@@ -160,7 +161,7 @@ func (c *apiClient) getTopOutbounds(_ context.Context, req mcp.CallToolRequest) 
 func (c *apiClient) getSourceRegions(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	instance := req.GetString("instance", "")
 	hours := req.GetInt("hours", 24)
-	body, err := c.get(fmt.Sprintf("/api/stats/source-regions?instance=%s&hours=%d", instance, hours))
+	body, err := c.get(fmt.Sprintf("/api/stats/source-regions?instance=%s&hours=%d", url.QueryEscape(instance), hours))
 	if err != nil {
 		return fail(err)
 	}
@@ -170,7 +171,7 @@ func (c *apiClient) getSourceRegions(_ context.Context, req mcp.CallToolRequest)
 func (c *apiClient) getTopSourceIPs(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	instance := req.GetString("instance", "")
 	hours := req.GetInt("hours", 24)
-	body, err := c.get(fmt.Sprintf("/api/stats/top-source-ips?instance=%s&hours=%d", instance, hours))
+	body, err := c.get(fmt.Sprintf("/api/stats/top-source-ips?instance=%s&hours=%d", url.QueryEscape(instance), hours))
 	if err != nil {
 		return fail(err)
 	}
@@ -179,7 +180,7 @@ func (c *apiClient) getTopSourceIPs(_ context.Context, req mcp.CallToolRequest) 
 
 func (c *apiClient) listProxyGroups(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	instance := req.GetString("instance", "")
-	body, err := c.get("/api/groups?instance=" + instance)
+	body, err := c.get("/api/groups?instance=" + url.QueryEscape(instance))
 	if err != nil {
 		return fail(err)
 	}
@@ -210,7 +211,7 @@ func (c *apiClient) getRecentLogs(_ context.Context, req mcp.CallToolRequest) (*
 
 	var path string
 	if from > 0 || to > 0 {
-		path = fmt.Sprintf("/api/logs/recent?instance=%s&limit=%d", instance, limit)
+		path = fmt.Sprintf("/api/logs/recent?instance=%s&limit=%d", url.QueryEscape(instance), limit)
 		if from > 0 {
 			path += fmt.Sprintf("&from=%d", from)
 		}
@@ -218,13 +219,13 @@ func (c *apiClient) getRecentLogs(_ context.Context, req mcp.CallToolRequest) (*
 			path += fmt.Sprintf("&to=%d", to)
 		}
 	} else {
-		path = fmt.Sprintf("/api/logs/recent?instance=%s&n=%d", instance, n)
+		path = fmt.Sprintf("/api/logs/recent?instance=%s&n=%d", url.QueryEscape(instance), n)
 	}
 	if level != "" {
-		path += "&level=" + level
+		path += "&level=" + url.QueryEscape(level)
 	}
 	if keyword != "" {
-		path += "&q=" + keyword
+		path += "&q=" + url.QueryEscape(keyword)
 	}
 	body, err := c.get(path)
 	if err != nil {

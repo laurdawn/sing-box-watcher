@@ -11,8 +11,8 @@ const cookieName = "watcher_session"
 func Middleware(store *Store) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// skip login endpoint
-			if r.URL.Path == "/api/auth/login" {
+			// skip login endpoint (match with and without trailing slash)
+			if r.URL.Path == "/api/auth/login" || r.URL.Path == "/api/auth/login/" {
 				next.ServeHTTP(w, r)
 				return
 			}

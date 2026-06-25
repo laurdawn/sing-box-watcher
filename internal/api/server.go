@@ -75,10 +75,11 @@ func (s *Server) Handler(static http.FileSystem) http.Handler {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Logger)
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Content-Type", "Authorization"},
-		AllowCredentials: true,
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders: []string{"Content-Type", "Authorization"},
+		// AllowCredentials must NOT be true when AllowedOrigins is wildcard (CORS spec violation)
+		// The embedded frontend is same-origin so cookies work without CORS credentials
 	}))
 
 	// public auth endpoints
