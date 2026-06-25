@@ -288,10 +288,24 @@ function MCPTokenSection() {
   }, [])
 
   const copy = () => {
-    navigator.clipboard.writeText(token).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
+    const succeed = () => { setCopied(true); setTimeout(() => setCopied(false), 2000) }
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(token).then(succeed).catch(fallbackCopy)
+    } else {
+      fallbackCopy()
+    }
+  }
+
+  const fallbackCopy = () => {
+    const el = document.createElement('textarea')
+    el.value = token
+    el.style.cssText = 'position:fixed;opacity:0'
+    document.body.appendChild(el)
+    el.select()
+    document.execCommand('copy')
+    document.body.removeChild(el)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   const regenerate = async () => {

@@ -47,13 +47,13 @@ export function ConnectionTable({ connections, total = 0, page = 1, limit = 20, 
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50">
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">时间</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">入站</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">源地址</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">目标</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">出站</th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">规则</th>
-              <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground whitespace-nowrap">时间</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden sm:table-cell whitespace-nowrap">入站</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground whitespace-nowrap">源地址</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground whitespace-nowrap">目标</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground whitespace-nowrap">出站</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell whitespace-nowrap">规则</th>
+              <th className="px-4 py-3 font-medium text-muted-foreground text-right whitespace-nowrap">
                 <button
                   onClick={() => handleSort('upload')}
                   className="inline-flex items-center hover:text-foreground transition-colors"
@@ -61,7 +61,7 @@ export function ConnectionTable({ connections, total = 0, page = 1, limit = 20, 
                   上传<SortIcon field="upload" />
                 </button>
               </th>
-              <th className="px-4 py-3 font-medium text-muted-foreground text-right">
+              <th className="px-4 py-3 font-medium text-muted-foreground text-right whitespace-nowrap">
                 <button
                   onClick={() => handleSort('download')}
                   className="inline-flex items-center hover:text-foreground transition-colors"
@@ -69,7 +69,7 @@ export function ConnectionTable({ connections, total = 0, page = 1, limit = 20, 
                   下载<SortIcon field="download" />
                 </button>
               </th>
-              <th className="text-left px-4 py-3 font-medium text-muted-foreground">进程</th>
+              <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden xl:table-cell whitespace-nowrap">进程</th>
             </tr>
           </thead>
           <tbody>
@@ -83,13 +83,13 @@ export function ConnectionTable({ connections, total = 0, page = 1, limit = 20, 
                 <td className="px-4 py-2.5 whitespace-nowrap text-muted-foreground text-xs">
                   {formatTime(c.started_at)}
                 </td>
-                <td className="px-4 py-2.5">
+                <td className="px-4 py-2.5 hidden sm:table-cell">
                   <InboundBadge type={c.inbound_type} name={c.inbound} />
                 </td>
                 <td className="px-4 py-2.5">
                   <AddrCell ip={c.source_ip} port={c.source_port} geo={geoMap[c.source_ip]} />
                 </td>
-                <td className="px-4 py-2.5 max-w-[240px]">
+                <td className="px-4 py-2.5 max-w-[180px] sm:max-w-[240px]">
                   <AddrCell host={c.host} ip={c.dest_ip} port={c.dest_port} geo={geoMap[c.dest_ip]} />
                 </td>
                 <td className="px-4 py-2.5">
@@ -99,7 +99,7 @@ export function ConnectionTable({ connections, total = 0, page = 1, limit = 20, 
                     </span>
                   )}
                 </td>
-                <td className="px-4 py-2.5 max-w-[160px]">
+                <td className="px-4 py-2.5 max-w-[160px] hidden lg:table-cell">
                   <div className="truncate text-xs text-muted-foreground">{c.rule || '-'}</div>
                 </td>
                 <td className="px-4 py-2.5 text-right whitespace-nowrap text-xs text-indigo-500">
@@ -108,7 +108,7 @@ export function ConnectionTable({ connections, total = 0, page = 1, limit = 20, 
                 <td className="px-4 py-2.5 text-right whitespace-nowrap text-xs text-emerald-500">
                   {formatBytes(c.download)}
                 </td>
-                <td className="px-4 py-2.5 max-w-[120px]">
+                <td className="px-4 py-2.5 max-w-[120px] hidden xl:table-cell">
                   <div className="truncate text-xs text-muted-foreground">{c.process_path || '-'}</div>
                 </td>
               </tr>

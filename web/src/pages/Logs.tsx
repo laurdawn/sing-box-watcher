@@ -48,55 +48,57 @@ export function Logs({ instance }: Props) {
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]">
       {/* 工具栏 */}
-      <div className="flex items-center gap-3 mb-3 flex-wrap">
-        <div className="flex items-center gap-1 rounded-lg border p-1">
-          {LEVELS.map(l => (
-            <button
-              key={l}
-              onClick={() => setMinLevel(l)}
-              className={cn(
-                'px-2.5 py-1 text-xs rounded-md transition-colors',
-                minLevel === l
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-accent'
-              )}
-            >
-              {l}
-            </button>
-          ))}
+      <div className="flex flex-col gap-2 mb-3">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1 rounded-lg border p-1 overflow-x-auto">
+            {LEVELS.map(l => (
+              <button
+                key={l}
+                onClick={() => setMinLevel(l)}
+                className={cn(
+                  'px-2 sm:px-2.5 py-1 text-xs rounded-md transition-colors shrink-0',
+                  minLevel === l
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-muted-foreground hover:bg-accent'
+                )}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => setAutoScroll(v => !v)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border hover:bg-accent transition-colors shrink-0"
+          >
+            {autoScroll
+              ? <><PauseCircle className="w-3.5 h-3.5" /> 暂停</>
+              : <><PlayCircle className="w-3.5 h-3.5" /> 滚动</>
+            }
+          </button>
+          <div className="relative flex-1 min-w-[120px]">
+            <Search className="absolute left-2.5 top-1.5 w-3.5 h-3.5 text-muted-foreground" />
+            <input
+              value={keyword}
+              onChange={e => setKeyword(e.target.value)}
+              placeholder="关键字过滤"
+              className="h-8 pl-7 pr-7 rounded-md border bg-background text-xs focus:outline-none focus:ring-1 focus:ring-primary w-full"
+            />
+            {keyword && (
+              <button onClick={() => setKeyword('')} className="absolute right-2 top-1.5 text-muted-foreground hover:text-foreground">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+          <button
+            onClick={clear}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border hover:bg-accent text-muted-foreground transition-colors shrink-0"
+          >
+            <Trash2 className="w-3.5 h-3.5" /> 清空
+          </button>
+          <span className="text-xs text-muted-foreground shrink-0">
+            {filtered.length} / {logs.length} 条
+          </span>
         </div>
-        <button
-          onClick={() => setAutoScroll(v => !v)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border hover:bg-accent transition-colors"
-        >
-          {autoScroll
-            ? <><PauseCircle className="w-3.5 h-3.5" /> 暂停滚动</>
-            : <><PlayCircle className="w-3.5 h-3.5" /> 自动滚动</>
-          }
-        </button>
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1.5 w-3.5 h-3.5 text-muted-foreground" />
-          <input
-            value={keyword}
-            onChange={e => setKeyword(e.target.value)}
-            placeholder="关键字过滤"
-            className="h-8 pl-7 pr-7 rounded-md border bg-background text-xs focus:outline-none focus:ring-1 focus:ring-primary w-44"
-          />
-          {keyword && (
-            <button onClick={() => setKeyword('')} className="absolute right-2 top-1.5 text-muted-foreground hover:text-foreground">
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
-        <button
-          onClick={clear}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border hover:bg-accent text-muted-foreground transition-colors"
-        >
-          <Trash2 className="w-3.5 h-3.5" /> 清空
-        </button>
-        <span className="text-xs text-muted-foreground ml-auto">
-          {filtered.length} / {logs.length} 条
-        </span>
       </div>
 
       {/* 日志列表 */}

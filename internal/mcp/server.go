@@ -39,8 +39,8 @@ func registerTools(s *server.MCPServer, baseURL, internalToken string) {
 	s.AddTool(mcp.NewTool("query_traffic",
 		mcp.WithDescription("Query historical traffic data points for an instance within a time range."),
 		mcp.WithString("instance", mcp.Description("Instance name"), mcp.Required()),
-		mcp.WithNumber("from", mcp.Description("Start time as Unix timestamp (seconds)")),
-		mcp.WithNumber("to", mcp.Description("End time as Unix timestamp (seconds)")),
+		mcp.WithNumber("from", mcp.Description("Start time as Unix timestamp (milliseconds)")),
+		mcp.WithNumber("to", mcp.Description("End time as Unix timestamp (milliseconds)")),
 	), c.queryTraffic)
 
 	s.AddTool(mcp.NewTool("query_connections",

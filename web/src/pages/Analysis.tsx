@@ -52,14 +52,15 @@ export function Analysis({ instance }: Props) {
           <div className="px-5 py-4 border-b">
             <h3 className="font-medium">来源地区详情</h3>
           </div>
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-muted/50">
                 <th className="text-left px-5 py-3 font-medium text-muted-foreground">#</th>
                 <th className="text-left px-5 py-3 font-medium text-muted-foreground">地区</th>
-                <th className="text-right px-5 py-3 font-medium text-muted-foreground">独立 IP</th>
+                <th className="text-right px-5 py-3 font-medium text-muted-foreground hidden sm:table-cell">独立 IP</th>
                 <th className="text-right px-5 py-3 font-medium text-muted-foreground">连接数</th>
-                <th className="text-right px-5 py-3 font-medium text-muted-foreground">上传</th>
+                <th className="text-right px-5 py-3 font-medium text-muted-foreground hidden sm:table-cell">上传</th>
                 <th className="text-right px-5 py-3 font-medium text-muted-foreground">下载</th>
               </tr>
             </thead>
@@ -74,14 +75,15 @@ export function Analysis({ instance }: Props) {
                     <span className="mr-1.5">{r.flag}</span>
                     {r.country_name}
                   </td>
-                  <td className="px-5 py-2.5 text-right text-muted-foreground font-mono text-xs">{r.ips}</td>
+                  <td className="px-5 py-2.5 text-right text-muted-foreground font-mono text-xs hidden sm:table-cell">{r.ips}</td>
                   <td className="px-5 py-2.5 text-right">{r.count}</td>
-                  <td className="px-5 py-2.5 text-right text-indigo-500">{formatBytes(r.upload)}</td>
+                  <td className="px-5 py-2.5 text-right text-indigo-500 hidden sm:table-cell">{formatBytes(r.upload)}</td>
                   <td className="px-5 py-2.5 text-right text-emerald-500">{formatBytes(r.download)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
 
@@ -90,13 +92,14 @@ export function Analysis({ instance }: Props) {
         <div className="px-5 py-4 border-b">
           <h3 className="font-medium">Top 来源 IP</h3>
         </div>
+        <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-muted/50">
               <th className="text-left px-5 py-3 font-medium text-muted-foreground">#</th>
               <th className="text-left px-5 py-3 font-medium text-muted-foreground">来源 IP</th>
               <th className="text-right px-5 py-3 font-medium text-muted-foreground">连接数</th>
-              <th className="text-right px-5 py-3 font-medium text-muted-foreground">上传</th>
+              <th className="text-right px-5 py-3 font-medium text-muted-foreground hidden sm:table-cell">上传</th>
               <th className="text-right px-5 py-3 font-medium text-muted-foreground">下载</th>
             </tr>
           </thead>
@@ -109,12 +112,13 @@ export function Analysis({ instance }: Props) {
                 <td className="px-5 py-2.5 text-muted-foreground">{i + 1}</td>
                 <td className="px-5 py-2.5 font-mono text-xs">{ip.source_ip}</td>
                 <td className="px-5 py-2.5 text-right">{ip.count}</td>
-                <td className="px-5 py-2.5 text-right text-indigo-500">{formatBytes(ip.upload)}</td>
+                <td className="px-5 py-2.5 text-right text-indigo-500 hidden sm:table-cell">{formatBytes(ip.upload)}</td>
                 <td className="px-5 py-2.5 text-right text-emerald-500">{formatBytes(ip.download)}</td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   )

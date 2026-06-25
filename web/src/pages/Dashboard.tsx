@@ -118,7 +118,7 @@ export function Dashboard({ instance, instances }: Props) {
       <TrafficChart instance={instance} />
 
       <div>
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
           <h3 className="font-medium text-sm text-muted-foreground">
             活跃连接（实时）
             {(sourceFilter || destFilter) && (
@@ -127,14 +127,14 @@ export function Dashboard({ instance, instances }: Props) {
               </span>
             )}
           </h3>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <div className="relative">
               <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-muted-foreground" />
               <input
                 value={sourceFilter}
                 onChange={e => setSourceFilter(e.target.value)}
                 placeholder="过滤源 IP"
-                className="h-8 pl-7 pr-3 rounded-md border bg-background text-xs focus:outline-none focus:ring-1 focus:ring-primary w-36"
+                className="h-8 pl-7 pr-3 rounded-md border bg-background text-xs focus:outline-none focus:ring-1 focus:ring-primary w-28 sm:w-36"
               />
             </div>
             <div className="relative">
@@ -143,7 +143,7 @@ export function Dashboard({ instance, instances }: Props) {
                 value={destFilter}
                 onChange={e => setDestFilter(e.target.value)}
                 placeholder="过滤目标域名/IP"
-                className="h-8 pl-7 pr-3 rounded-md border bg-background text-xs focus:outline-none focus:ring-1 focus:ring-primary w-44"
+                className="h-8 pl-7 pr-3 rounded-md border bg-background text-xs focus:outline-none focus:ring-1 focus:ring-primary w-36 sm:w-44"
               />
             </div>
           </div>
