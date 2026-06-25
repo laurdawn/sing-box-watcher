@@ -13,6 +13,154 @@ A lightweight monitoring dashboard for [sing-box](https://github.com/SagerNet/si
 - Multi-instance support — manage multiple sing-box nodes from one dashboard
 - Hot-reload configuration — no restart required after saving settings
 - Embedded frontend — single binary deployment
+- **MCP Server** — let AI (e.g. Claude) query and analyze traffic data directly via the MCP protocol
+
+## Screenshots
+
+> Dashboard / Proxies / Analysis / Connections / Settings
+
+## Requirements
+
+- Go 1.21+
+- Node.js 18+ (for frontend development only)
+- sing-box with `experimental.clash_api` or gRPC API enabled
+
+## Quick Start
+
+### 1. Clone
+
+```bash
+git clone https://github.com/laurdawn/sing-box-watcher.git
+cd sing-box-watcher
+```
+
+### 2. Build frontend
+
+```bash
+cd web && npm install && npm run build && cd ..
+```
+
+### 3. Build backend
+
+```bash
+go build -o watcher ./cmd/watcher
+```
+
+### 4. Configure
+
+```bash
+cp config.example.yaml config.yaml
+# Edit config.yaml as needed
+```
+
+### 5. Run
+
+```bash
+./watcher -config config.yaml
+```
+
+Open `http://localhost:8080` in your browser.
+
+## Configuration
+
+`config.yaml` controls startup parameters only. All other settings (instances, retention days, GeoIP path) are managed from the web UI and persisted to SQLite.
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `listen` | `:8080` | HTTP listen address |
+| `data_dir` | `./data` | Directory for database and GeoIP files |
+
+## sing-box API Setup
+
+Enable the gRPC API in your sing-box config:
+
+```json
+{
+  "experimental": {
+    "clash_api": {
+      "external_controller": "0.0.0.0:9090",
+      "secret": "your-secret"
+    }
+  }
+}
+```
+
+Then add the instance in the watcher Settings page: fill in the API address (e.g. `http://your-host:9090`) and the secret.
+
+## AI / MCP Integration
+
+sing-box-watcher ships with a built-in MCP Server, allowing MCP-compatible AI assistants (e.g. Claude) to query and analyze your proxy data directly.
+
+### Enable
+
+Go to the **AI / MCP** section in the Settings page and toggle the switch on. The MCP endpoint is:
+
+```
+http://your-server:8080/mcp
+```
+
+### Claude Configuration
+
+Add to your Claude Desktop or Claude Code MCP config:
+
+```json
+{
+  "mcpServers": {
+    "sing-box": {
+      "url": "http://your-server:8080/mcp"
+    }
+  }
+}
+```
+
+### Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `list_instances` | List all instances with online status |
+| `get_service_info` | Get version and uptime |
+| `query_traffic` | Query historical traffic data |
+| `query_connections` | Paginated connection records with filters |
+| `get_active_connections` | Currently open connections |
+| `get_top_domains` | Most accessed domains ranking |
+| `get_top_outbounds` | Outbound proxy traffic ranking |
+| `get_source_regions` | Source IP geographic distribution |
+| `get_top_source_ips` | Top source IPs ranking |
+| `list_proxy_groups` | Proxy groups with latency |
+| `select_outbound` | Switch active outbound for a group |
+| `lookup_geo` | IP geolocation lookup |
+
+## Docker
+
+```bash
+docker compose up -d
+```
+
+See `docker-compose.yml` for configuration options.
+
+## Development
+
+```bash
+# Backend (with dev file serving)
+go run ./cmd/watcher -config config.yaml
+
+# Frontend dev server (proxies /api and /ws to :8080)
+cd web && npm run dev
+```
+
+Frontend is available at `http://localhost:5173`.
+
+## Data
+
+| Path | Description |
+|------|-------------|
+| `data/watcher.db` | SQLite database (traffic, connections, settings) |
+| `data/GeoLite2-City.mmdb` | GeoIP database (auto-downloaded on first run) |
+
+## License
+
+MIT
+
 
 ## Screenshots
 
