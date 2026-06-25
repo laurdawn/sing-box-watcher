@@ -86,6 +86,7 @@ func (s *Server) Handler(static http.FileSystem) http.Handler {
 		r.Put("/config", s.handleSaveConfig)
 		r.Post("/geo/lookup", s.handleGeoLookup)
 		r.Get("/service/info", s.handleServiceInfo)
+		r.Get("/logs/recent", s.handleRecentLogs)
 		r.Get("/groups", s.handleGroups)
 		r.Get("/groups/outbounds", s.handleGetOutbounds)
 		r.Post("/groups/select", s.handleSelectOutbound)

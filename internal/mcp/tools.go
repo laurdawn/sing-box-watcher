@@ -199,6 +199,21 @@ func (c *apiClient) selectOutbound(_ context.Context, req mcp.CallToolRequest) (
 	return ok(body)
 }
 
+func (c *apiClient) getRecentLogs(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	instance := req.GetString("instance", "")
+	n := req.GetInt("n", 100)
+	level := req.GetString("level", "")
+	path := fmt.Sprintf("/api/logs/recent?instance=%s&n=%d", instance, n)
+	if level != "" {
+		path += "&level=" + level
+	}
+	body, err := c.get(path)
+	if err != nil {
+		return fail(err)
+	}
+	return ok(body)
+}
+
 func (c *apiClient) lookupGeo(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	payload := map[string]string{"ip": req.GetString("ip", "")}
 	body, err := c.post("/api/geo/lookup", payload)

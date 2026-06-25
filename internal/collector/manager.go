@@ -24,6 +24,7 @@ type instanceEntry struct {
 	connections *ConnectionCollector
 	status      *StatusCollector
 	groups      *GroupsCollector
+	logs        *LogCollector
 	cancel      context.CancelFunc
 }
 
@@ -52,6 +53,7 @@ func newEntry(inst store.Instance, db *sql.DB) *instanceEntry {
 		connections: NewConnectionCollector(inst.Name, inst.API, inst.Secret, db),
 		status:      NewStatusCollector(inst.Name, inst.API, inst.Secret),
 		groups:      NewGroupsCollector(inst.Name, inst.API, inst.Secret),
+		logs:        NewLogCollector(inst.Name, inst.API, inst.Secret),
 	}
 }
 
@@ -75,11 +77,12 @@ func (m *Manager) startEntry(rootCtx context.Context, e *instanceEntry, wg *sync
 	ctx, cancel := context.WithCancel(rootCtx)
 	e.cancel = cancel
 
-	wg.Add(4)
+	wg.Add(5)
 	go func() { defer wg.Done(); e.traffic.Run(ctx) }()
 	go func() { defer wg.Done(); e.connections.Run(ctx) }()
 	go func() { defer wg.Done(); e.status.Run(ctx) }()
 	go func() { defer wg.Done(); e.groups.Run(ctx) }()
+	go func() { defer wg.Done(); e.logs.Run(ctx) }()
 }
 
 func (m *Manager) Reload(newInstances []store.Instance) {
@@ -195,4 +198,14 @@ func (m *Manager) WithGRPC(instance string, fn func(daemon.StartedServiceClient,
 	defer conn.Close()
 	client := daemon.NewStartedServiceClient(conn)
 	return fn(client, e.traffic.secret)
+}
+
+func (m *Manager) RecentLogs(instance string, n int, level string) []LogEntry {
+	m.mu.RLock()
+	e, ok := m.instances[instance]
+	m.mu.RUnlock()
+	if !ok {
+		return nil
+	}
+	return e.logs.Recent(n, level)
 }

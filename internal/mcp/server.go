@@ -96,6 +96,13 @@ func registerTools(s *server.MCPServer, baseURL string) {
 		mcp.WithString("outbound_tag", mcp.Description("Target outbound tag to select"), mcp.Required()),
 	), c.selectOutbound)
 
+	s.AddTool(mcp.NewTool("get_recent_logs",
+		mcp.WithDescription("Get recent log entries from sing-box. Logs are continuously buffered (up to 500 per instance) since startup."),
+		mcp.WithString("instance", mcp.Description("Instance name"), mcp.Required()),
+		mcp.WithNumber("n", mcp.Description("Number of entries to return (default 100, max 500)")),
+		mcp.WithString("level", mcp.Description("Minimum log level filter: ERROR, WARN, INFO, DEBUG, TRACE (default: all)")),
+	), c.getRecentLogs)
+
 	s.AddTool(mcp.NewTool("lookup_geo",
 		mcp.WithDescription("Look up geographic location (country, city, coordinates) for an IP address."),
 		mcp.WithString("ip", mcp.Description("IP address to look up"), mcp.Required()),
