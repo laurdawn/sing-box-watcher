@@ -203,9 +203,13 @@ func (c *apiClient) getRecentLogs(_ context.Context, req mcp.CallToolRequest) (*
 	instance := req.GetString("instance", "")
 	n := req.GetInt("n", 100)
 	level := req.GetString("level", "")
+	keyword := req.GetString("q", "")
 	path := fmt.Sprintf("/api/logs/recent?instance=%s&n=%d", instance, n)
 	if level != "" {
 		path += "&level=" + level
+	}
+	if keyword != "" {
+		path += "&q=" + keyword
 	}
 	body, err := c.get(path)
 	if err != nil {

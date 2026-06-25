@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
@@ -52,18 +53,25 @@ func (c *LogCollector) clear() {
 	c.buf = c.buf[:0]
 }
 
-// Recent returns the last n entries, optionally filtered by minimum level.
+// Recent returns the last n entries, optionally filtered by minimum level and keyword.
 // level: "" = all, "ERROR", "WARN", "INFO", "DEBUG", "TRACE"
-func (c *LogCollector) Recent(n int, level string) []LogEntry {
+// keyword: "" = all, case-insensitive substring match on message
+func (c *LogCollector) Recent(n int, level, keyword string) []LogEntry {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
 	minLevel := levelRank(level)
+	kw := strings.ToLower(keyword)
 	result := make([]LogEntry, 0, n)
 	for i := len(c.buf) - 1; i >= 0 && len(result) < n; i-- {
-		if levelRank(c.buf[i].Level) <= minLevel {
-			result = append(result, c.buf[i])
+		e := c.buf[i]
+		if levelRank(e.Level) > minLevel {
+			continue
 		}
+		if kw != "" && !strings.Contains(strings.ToLower(e.Message), kw) {
+			continue
+		}
+		result = append(result, e)
 	}
 	// reverse to chronological order
 	for i, j := 0, len(result)-1; i < j; i, j = i+1, j-1 {

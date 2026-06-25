@@ -200,12 +200,12 @@ func (m *Manager) WithGRPC(instance string, fn func(daemon.StartedServiceClient,
 	return fn(client, e.traffic.secret)
 }
 
-func (m *Manager) RecentLogs(instance string, n int, level string) []LogEntry {
+func (m *Manager) RecentLogs(instance string, n int, level, keyword string) []LogEntry {
 	m.mu.RLock()
 	e, ok := m.instances[instance]
 	m.mu.RUnlock()
 	if !ok {
 		return nil
 	}
-	return e.logs.Recent(n, level)
+	return e.logs.Recent(n, level, keyword)
 }

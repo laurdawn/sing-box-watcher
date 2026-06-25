@@ -101,6 +101,7 @@ func registerTools(s *server.MCPServer, baseURL string) {
 		mcp.WithString("instance", mcp.Description("Instance name"), mcp.Required()),
 		mcp.WithNumber("n", mcp.Description("Number of entries to return (default 100, max 500)")),
 		mcp.WithString("level", mcp.Description("Minimum log level filter: ERROR, WARN, INFO, DEBUG, TRACE (default: all)")),
+		mcp.WithString("q", mcp.Description("Keyword filter, case-insensitive substring match on message")),
 	), c.getRecentLogs)
 
 	s.AddTool(mcp.NewTool("lookup_geo",
