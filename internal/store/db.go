@@ -59,6 +59,16 @@ CREATE INDEX IF NOT EXISTS idx_conn_host ON connections(host);
 CREATE INDEX IF NOT EXISTS idx_conn_dest_ip ON connections(dest_ip);
 CREATE INDEX IF NOT EXISTS idx_conn_inbound ON connections(instance, inbound_type);
 CREATE INDEX IF NOT EXISTS idx_conn_outbound ON connections(instance, outbound);
+
+CREATE TABLE IF NOT EXISTS logs (
+    id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    instance  TEXT NOT NULL,
+    ts        INTEGER NOT NULL,
+    level     TEXT NOT NULL,
+    message   TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_logs_instance_ts ON logs(instance, ts);
+CREATE INDEX IF NOT EXISTS idx_logs_level       ON logs(instance, level, ts);
 `)
 	return err
 }

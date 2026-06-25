@@ -8,11 +8,13 @@ import (
 
 // Settings 存储运行时可修改的配置，持久化到 SQLite。
 type Settings struct {
-	RetentionDays int        `json:"retention_days"`
-	GeoDBPath     string     `json:"geo_db_path"`
-	GeoDBURL      string     `json:"geo_db_url"`
-	Instances     []Instance `json:"instances"`
-	MCPEnabled    bool       `json:"mcp_enabled"`
+	RetentionDays      int        `json:"retention_days"`
+	GeoDBPath          string     `json:"geo_db_path"`
+	GeoDBURL           string     `json:"geo_db_url"`
+	Instances          []Instance `json:"instances"`
+	MCPEnabled         bool       `json:"mcp_enabled"`
+	LogPersistEnabled  bool       `json:"log_persist_enabled"`
+	LogPersistMinLevel string     `json:"log_persist_min_level"` // 默认 "WARN"
 }
 
 type Instance struct {

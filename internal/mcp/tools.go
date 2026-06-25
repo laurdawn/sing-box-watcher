@@ -202,9 +202,24 @@ func (c *apiClient) selectOutbound(_ context.Context, req mcp.CallToolRequest) (
 func (c *apiClient) getRecentLogs(_ context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	instance := req.GetString("instance", "")
 	n := req.GetInt("n", 100)
+	limit := req.GetInt("limit", 200)
+	from := req.GetInt("from", 0)
+	to := req.GetInt("to", 0)
 	level := req.GetString("level", "")
 	keyword := req.GetString("q", "")
-	path := fmt.Sprintf("/api/logs/recent?instance=%s&n=%d", instance, n)
+
+	var path string
+	if from > 0 || to > 0 {
+		path = fmt.Sprintf("/api/logs/recent?instance=%s&limit=%d", instance, limit)
+		if from > 0 {
+			path += fmt.Sprintf("&from=%d", from)
+		}
+		if to > 0 {
+			path += fmt.Sprintf("&to=%d", to)
+		}
+	} else {
+		path = fmt.Sprintf("/api/logs/recent?instance=%s&n=%d", instance, n)
+	}
 	if level != "" {
 		path += "&level=" + level
 	}

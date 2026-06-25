@@ -21,6 +21,9 @@ func Run(ctx context.Context, db *sql.DB, retention time.Duration) {
 		if err := store.DeleteOldConnections(db, before); err != nil {
 			log.Printf("retention: delete old connections: %v", err)
 		}
+		if err := store.DeleteOldLogs(db, before); err != nil {
+			log.Printf("retention: delete old logs: %v", err)
+		}
 	}
 
 	clean()

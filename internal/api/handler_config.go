@@ -48,6 +48,9 @@ func (s *Server) handleSaveConfig(w http.ResponseWriter, r *http.Request) {
 
 	s.manager.Reload(body.Instances)
 
+	// 热重载日志持久化配置
+	s.manager.UpdateLogConfig(body.LogPersistEnabled, body.LogPersistMinLevel)
+
 	// 热重载 MCP 开关
 	if body.MCPEnabled {
 		s.mcpGate.enable("http://" + s.cfg.Listen)

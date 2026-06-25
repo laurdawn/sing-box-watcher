@@ -53,7 +53,7 @@ func newEntry(inst store.Instance, db *sql.DB) *instanceEntry {
 		connections: NewConnectionCollector(inst.Name, inst.API, inst.Secret, db),
 		status:      NewStatusCollector(inst.Name, inst.API, inst.Secret),
 		groups:      NewGroupsCollector(inst.Name, inst.API, inst.Secret),
-		logs:        NewLogCollector(inst.Name, inst.API, inst.Secret),
+		logs:        NewLogCollector(inst.Name, inst.API, inst.Secret, db),
 	}
 }
 
@@ -208,4 +208,12 @@ func (m *Manager) RecentLogs(instance string, n int, level, keyword string) []Lo
 		return nil
 	}
 	return e.logs.Recent(n, level, keyword)
+}
+
+func (m *Manager) UpdateLogConfig(enabled bool, minLevel string) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	for _, e := range m.instances {
+		e.logs.UpdateConfig(enabled, minLevel)
+	}
 }

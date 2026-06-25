@@ -13,10 +13,12 @@ interface ConfigData {
   geo_db_url: string
   instances: Instance[]
   mcp_enabled: boolean
+  log_persist_enabled: boolean
+  log_persist_min_level: string
 }
 
 const emptyInstance = (): Instance => ({ name: '', api: '', secret: '' })
-const defaultCfg = (): ConfigData => ({ retention_days: 7, geo_db_path: '', geo_db_url: '', instances: [], mcp_enabled: false })
+const defaultCfg = (): ConfigData => ({ retention_days: 7, geo_db_path: '', geo_db_url: '', instances: [], mcp_enabled: false, log_persist_enabled: false, log_persist_min_level: 'WARN' })
 
 export function Settings() {
   const [cfg, setCfg] = useState<ConfigData>(defaultCfg())
@@ -184,6 +186,39 @@ export function Settings() {
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* 日志持久化 */}
+      <div>
+        <h2 className="text-base font-semibold mb-1">日志持久化</h2>
+        <p className="text-sm text-muted-foreground mb-4">开启后将日志写入 SQLite，支持历史查询。建议仅持久化 WARN 以上级别以控制写入量。</p>
+        <div className="rounded-xl border bg-card p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">启用持久化</p>
+            <button
+              role="switch"
+              aria-checked={cfg.log_persist_enabled}
+              onClick={() => setCfg(prev => ({ ...prev, log_persist_enabled: !prev.log_persist_enabled }))}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${cfg.log_persist_enabled ? 'bg-primary' : 'bg-muted'}`}
+            >
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${cfg.log_persist_enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+            </button>
+          </div>
+          {cfg.log_persist_enabled && (
+            <div className="flex items-center gap-4">
+              <label className="text-sm font-medium w-28 shrink-0">最低持久化级别</label>
+              <select
+                value={cfg.log_persist_min_level}
+                onChange={e => setCfg(prev => ({ ...prev, log_persist_min_level: e.target.value }))}
+                className="h-9 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                {['PANIC', 'FATAL', 'ERROR', 'WARN', 'INFO', 'DEBUG', 'TRACE'].map(l => (
+                  <option key={l} value={l}>{l}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
       </div>
 

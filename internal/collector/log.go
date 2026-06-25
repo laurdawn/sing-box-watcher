@@ -2,6 +2,7 @@ package collector
 
 import (
 	"context"
+	"database/sql"
 	"io"
 	"log"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/laurdawn/sing-box-watcher/internal/daemon"
+	"github.com/laurdawn/sing-box-watcher/internal/store"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -24,18 +26,35 @@ type LogCollector struct {
 	instance string
 	apiURL   string
 	secret   string
+	db       *sql.DB
+
+	cfgMu           sync.RWMutex
+	persistEnabled  bool
+	persistMinLevel string
 
 	mu  sync.RWMutex
-	buf []LogEntry // 环形缓冲，始终保留最新的 logBufferSize 条
+	buf []LogEntry
 }
 
-func NewLogCollector(instance, apiURL, secret string) *LogCollector {
+func NewLogCollector(instance, apiURL, secret string, db *sql.DB) *LogCollector {
 	return &LogCollector{
-		instance: instance,
-		apiURL:   apiURL,
-		secret:   secret,
-		buf:      make([]LogEntry, 0, logBufferSize),
+		instance:        instance,
+		apiURL:          apiURL,
+		secret:          secret,
+		db:              db,
+		persistMinLevel: "WARN",
+		buf:             make([]LogEntry, 0, logBufferSize),
 	}
+}
+
+func (c *LogCollector) UpdateConfig(enabled bool, minLevel string) {
+	if minLevel == "" {
+		minLevel = "WARN"
+	}
+	c.cfgMu.Lock()
+	c.persistEnabled = enabled
+	c.persistMinLevel = minLevel
+	c.cfgMu.Unlock()
 }
 
 func (c *LogCollector) append(entries []LogEntry) {
@@ -53,9 +72,8 @@ func (c *LogCollector) clear() {
 	c.buf = c.buf[:0]
 }
 
-// Recent returns the last n entries, optionally filtered by minimum level and keyword.
-// level: "" = all, "ERROR", "WARN", "INFO", "DEBUG", "TRACE"
-// keyword: "" = all, case-insensitive substring match on message
+// Recent returns the last n entries from the in-memory buffer,
+// optionally filtered by minimum level and keyword.
 func (c *LogCollector) Recent(n int, level, keyword string) []LogEntry {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
@@ -73,7 +91,6 @@ func (c *LogCollector) Recent(n int, level, keyword string) []LogEntry {
 		}
 		result = append(result, e)
 	}
-	// reverse to chronological order
 	for i, j := 0, len(result)-1; i < j; i, j = i+1, j-1 {
 		result[i], result[j] = result[j], result[i]
 	}
@@ -97,7 +114,7 @@ func levelRank(level string) int {
 	case "TRACE":
 		return 6
 	default:
-		return 6 // empty = all
+		return 6
 	}
 }
 
@@ -146,15 +163,36 @@ func (c *LogCollector) connect(ctx context.Context) error {
 		}
 
 		entries := make([]LogEntry, 0, len(msg.Messages))
+		now := time.Now()
 		for _, m := range msg.Messages {
 			entries = append(entries, LogEntry{
-				Time:    time.Now(),
+				Time:    now,
 				Level:   m.Level.String(),
 				Message: m.Message,
 			})
 		}
-		if len(entries) > 0 {
-			c.append(entries)
+		if len(entries) == 0 {
+			continue
+		}
+
+		c.append(entries)
+
+		// persist to DB if enabled and level meets threshold
+		c.cfgMu.RLock()
+		enabled := c.persistEnabled
+		minLevel := c.persistMinLevel
+		c.cfgMu.RUnlock()
+
+		if enabled && c.db != nil {
+			minRank := levelRank(minLevel)
+			tsMs := now.UnixMilli()
+			for _, e := range entries {
+				if levelRank(e.Level) <= minRank {
+					if err := store.InsertLog(c.db, c.instance, tsMs, e.Level, e.Message); err != nil {
+						log.Printf("[%s] log persist error: %v", c.instance, err)
+					}
+				}
+			}
 		}
 	}
 }

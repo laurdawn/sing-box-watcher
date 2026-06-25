@@ -97,9 +97,12 @@ func registerTools(s *server.MCPServer, baseURL string) {
 	), c.selectOutbound)
 
 	s.AddTool(mcp.NewTool("get_recent_logs",
-		mcp.WithDescription("Get recent log entries from sing-box. Logs are continuously buffered (up to 500 per instance) since startup."),
+		mcp.WithDescription("Get log entries from sing-box. Without from/to returns recent in-memory entries; with from/to queries persisted history (requires log persistence enabled in settings)."),
 		mcp.WithString("instance", mcp.Description("Instance name"), mcp.Required()),
-		mcp.WithNumber("n", mcp.Description("Number of entries to return (default 100, max 500)")),
+		mcp.WithNumber("n", mcp.Description("Number of recent entries to return (default 100, max 500, used without from/to)")),
+		mcp.WithNumber("limit", mcp.Description("Max entries for historical query (default 200, max 1000, used with from/to)")),
+		mcp.WithNumber("from", mcp.Description("Start time as Unix timestamp (seconds), enables historical DB query")),
+		mcp.WithNumber("to", mcp.Description("End time as Unix timestamp (seconds)")),
 		mcp.WithString("level", mcp.Description("Minimum log level filter: ERROR, WARN, INFO, DEBUG, TRACE (default: all)")),
 		mcp.WithString("q", mcp.Description("Keyword filter, case-insensitive substring match on message")),
 	), c.getRecentLogs)
