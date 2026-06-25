@@ -52,7 +52,6 @@ export function Dashboard({ instance, instances }: Props) {
     return () => clearInterval(t)
   }, [instance])
 
-  // 客户端过滤（数据已在内存，不走 API）
   const filtered = useMemo(() => {
     let conns = activeConns
     if (sourceFilter) {
@@ -70,23 +69,24 @@ export function Dashboard({ instance, instances }: Props) {
   }, [activeConns, sourceFilter, destFilter])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* 废弃配置警告 */}
       {serviceInfo && serviceInfo.deprecated_warnings.length > 0 && (
-        <div className="flex items-start gap-2 px-4 py-3 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800 text-sm text-amber-800 dark:text-amber-300">
-          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+        <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-800/50 text-sm text-amber-800 dark:text-amber-300">
+          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
           <div>
-            <div className="font-medium mb-1">配置项已废弃</div>
-            {serviceInfo.deprecated_warnings.map((w, i) => <div key={i} className="text-xs">{w}</div>)}
+            <div className="font-medium text-xs mb-1">配置项已废弃</div>
+            {serviceInfo.deprecated_warnings.map((w, i) => <div key={i} className="text-xs opacity-80">{w}</div>)}
           </div>
         </div>
       )}
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      {/* 状态卡片 */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <StatCard
           label="上传速率"
           value={formatSpeed(live?.up ?? 0)}
-          icon={<ArrowUp className="w-4 h-4 text-indigo-500" />}
+          icon={<ArrowUp className="w-4 h-4 text-blue-500" />}
         />
         <StatCard
           label="下载速率"
@@ -96,7 +96,7 @@ export function Dashboard({ instance, instances }: Props) {
         <StatCard
           label="活跃连接"
           value={String(stats?.active_connections ?? activeConns.length)}
-          icon={<Wifi className="w-4 h-4" />}
+          icon={<Wifi className="w-4 h-4 text-violet-500" />}
         />
         <StatCard
           label="服务状态"
@@ -105,45 +105,44 @@ export function Dashboard({ instance, instances }: Props) {
         />
         <StatCard
           label="版本"
-          value={serviceInfo?.version || '-'}
+          value={serviceInfo?.version || '—'}
           icon={<Activity className="w-4 h-4 text-muted-foreground" />}
         />
         <StatCard
           label="运行时长"
-          value={serviceInfo ? formatUptime(serviceInfo.uptime_seconds) : '-'}
+          value={serviceInfo ? formatUptime(serviceInfo.uptime_seconds) : '—'}
           icon={<Clock className="w-4 h-4 text-muted-foreground" />}
         />
       </div>
 
       <TrafficChart instance={instance} />
 
+      {/* 活跃连接 */}
       <div>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-          <h3 className="font-medium text-sm text-muted-foreground">
-            活跃连接（实时）
-            {(sourceFilter || destFilter) && (
-              <span className="ml-2 text-xs text-foreground">
-                {filtered.length} / {activeConns.length}
-              </span>
-            )}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-sm">活跃连接</h3>
+            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-mono">
+              {(sourceFilter || destFilter) ? `${filtered.length} / ${activeConns.length}` : activeConns.length}
+            </span>
+          </div>
           <div className="flex items-center gap-2 flex-wrap">
             <div className="relative">
-              <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-muted-foreground" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
               <input
                 value={sourceFilter}
                 onChange={e => setSourceFilter(e.target.value)}
                 placeholder="过滤源 IP"
-                className="h-8 pl-7 pr-3 rounded-md border bg-background text-xs focus:outline-none focus:ring-1 focus:ring-primary w-28 sm:w-36"
+                className="h-8 pl-8 pr-3 rounded-lg border bg-card text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 w-28 sm:w-36"
               />
             </div>
             <div className="relative">
-              <Search className="absolute left-2.5 top-2 w-3.5 h-3.5 text-muted-foreground" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
               <input
                 value={destFilter}
                 onChange={e => setDestFilter(e.target.value)}
                 placeholder="过滤目标域名/IP"
-                className="h-8 pl-7 pr-3 rounded-md border bg-background text-xs focus:outline-none focus:ring-1 focus:ring-primary w-36 sm:w-44"
+                className="h-8 pl-8 pr-3 rounded-lg border bg-card text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 w-36 sm:w-44"
               />
             </div>
           </div>

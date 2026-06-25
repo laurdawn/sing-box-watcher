@@ -49,14 +49,14 @@ function GroupCard({
 
   return (
     <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-3 border-b">
-        <div className="flex items-center gap-2">
-          <span className="font-medium">{group.tag}</span>
-          <span className="text-xs text-muted-foreground px-2 py-0.5 rounded-md bg-muted">
+      <div className="flex items-center justify-between px-5 py-3 border-b bg-muted/20">
+        <div className="flex items-center gap-2.5">
+          <span className="font-semibold text-sm">{group.tag}</span>
+          <span className="text-xs text-muted-foreground px-2 py-0.5 rounded-md bg-muted font-mono">
             {group.type}
           </span>
           {group.selected && (
-            <span className="text-xs text-emerald-600 dark:text-emerald-400">
+            <span className="text-xs text-blue-500 font-medium">
               → {group.selected}
             </span>
           )}
@@ -65,7 +65,7 @@ function GroupCard({
           <button
             onClick={onURLTest}
             disabled={testing}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md border hover:bg-accent transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-lg border hover:bg-accent transition-colors disabled:opacity-50 font-medium"
           >
             <RefreshCw className={cn('w-3 h-3', testing && 'animate-spin')} />
             测速
@@ -109,24 +109,31 @@ function NodeItem({
     <div
       onClick={onClick}
       className={cn(
-        'rounded-lg border px-3 py-2.5 text-sm transition-colors',
-        selectable ? 'cursor-pointer hover:bg-accent' : 'cursor-default',
-        selected && 'border-primary bg-primary/5 dark:bg-primary/10',
+        'rounded-lg border px-3 py-2.5 text-sm transition-all',
+        selectable ? 'cursor-pointer hover:border-blue-300 hover:shadow-sm dark:hover:border-blue-700' : 'cursor-default',
+        selected
+          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-sm'
+          : 'hover:bg-accent/50',
       )}
     >
-      <div className="flex items-center justify-between gap-1 mb-0.5">
-        <span className={cn('text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono', selected && 'bg-primary/10')}>
+      <div className="flex items-center justify-between gap-1 mb-1">
+        <span className={cn(
+          'text-[10px] px-1.5 py-0.5 rounded font-mono font-medium',
+          selected
+            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300'
+            : 'bg-muted text-muted-foreground'
+        )}>
           {item.type || 'unknown'}
         </span>
         {selected && (
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
         )}
       </div>
-      <div className="truncate text-xs font-medium mt-1" title={item.tag}>
+      <div className="truncate text-xs font-medium mt-0.5" title={item.tag}>
         {item.tag}
       </div>
-      <div className={cn('text-xs mt-0.5', delayColor)}>
-        {delay > 0 ? `${delay} ms` : '未测试'}
+      <div className={cn('text-xs mt-0.5 font-mono', delayColor)}>
+        {delay > 0 ? `${delay} ms` : '—'}
       </div>
     </div>
   )

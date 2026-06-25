@@ -71,67 +71,61 @@ export function Settings() {
     fetch('/api/config').then(r => r.json()).then((data: ConfigData) => setCfg({ ...defaultCfg(), ...data, instances: data.instances ?? [] }))
   }
 
+  const inputCls = 'h-9 rounded-lg border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors'
+  const sectionCls = 'rounded-xl border bg-card shadow-sm p-5 space-y-4'
+
   return (
-    <div className="max-w-2xl space-y-8">
+    <div className="max-w-2xl space-y-7">
       {/* 基础设置 */}
-      <div>
-        <h2 className="text-base font-semibold mb-1">基础设置</h2>
-        <p className="text-sm text-muted-foreground mb-4">修改后点击保存，采集器自动热重载，无需重启。</p>
-        <div className="rounded-xl border bg-card p-5 space-y-4">
+      <section>
+        <div className="mb-3">
+          <h2 className="text-sm font-semibold">基础设置</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">修改后点击保存，采集器自动热重载，无需重启。</p>
+        </div>
+        <div className={sectionCls}>
           <div className="flex items-center gap-4">
             <label className="text-sm font-medium w-28 shrink-0">数据保留天数</label>
             <input
-              type="number"
-              min={1}
-              max={365}
+              type="number" min={1} max={365}
               value={cfg.retention_days}
               onChange={e => setCfg(prev => ({ ...prev, retention_days: Number(e.target.value) }))}
-              className="h-9 w-28 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+              className={`${inputCls} w-24`}
             />
-            <span className="text-sm text-muted-foreground">天（默认 7 天）</span>
+            <span className="text-xs text-muted-foreground">天（默认 7 天）</span>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* GeoIP 设置 */}
-      <div>
-        <h2 className="text-base font-semibold mb-1">GeoIP 数据库</h2>
-        <p className="text-sm text-muted-foreground mb-4">用于 IP 归属地查询。首次启动若文件不存在会自动下载。</p>
-        <div className="rounded-xl border bg-card p-5 space-y-4">
+      {/* GeoIP */}
+      <section>
+        <div className="mb-3">
+          <h2 className="text-sm font-semibold">GeoIP 数据库</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">用于 IP 归属地查询。首次启动若文件不存在会自动下载。</p>
+        </div>
+        <div className={sectionCls}>
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground">数据库路径</label>
-            <input
-              value={cfg.geo_db_path}
-              onChange={e => setCfg(prev => ({ ...prev, geo_db_path: e.target.value }))}
-              placeholder="./data/GeoLite2-City.mmdb"
-              className="h-9 w-full rounded-md border bg-background px-3 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-            />
+            <input value={cfg.geo_db_path} onChange={e => setCfg(prev => ({ ...prev, geo_db_path: e.target.value }))}
+              placeholder="./data/GeoLite2-City.mmdb" className={`${inputCls} w-full font-mono text-xs`} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
-              下载地址 <span className="font-normal">（留空使用默认源）</span>
-            </label>
-            <input
-              value={cfg.geo_db_url}
-              onChange={e => setCfg(prev => ({ ...prev, geo_db_url: e.target.value }))}
+            <label className="text-xs font-medium text-muted-foreground">下载地址 <span className="font-normal opacity-60">（留空使用默认源）</span></label>
+            <input value={cfg.geo_db_url} onChange={e => setCfg(prev => ({ ...prev, geo_db_url: e.target.value }))}
               placeholder="https://github.com/P3TERX/GeoLite.mmdb/raw/download/GeoLite2-City.mmdb"
-              className="h-9 w-full rounded-md border bg-background px-3 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-            />
+              className={`${inputCls} w-full font-mono text-xs`} />
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* sing-box 实例 */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
+      {/* 实例 */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
           <div>
-            <h2 className="text-base font-semibold">sing-box 实例</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">每个实例独立采集流量和连接数据。</p>
+            <h2 className="text-sm font-semibold">sing-box 实例</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">每个实例独立采集流量和连接数据。</p>
           </div>
-          <button
-            onClick={addInstance}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border text-sm hover:bg-accent transition-colors"
-          >
+          <button onClick={addInstance}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium hover:bg-accent transition-colors">
             <Plus className="w-3.5 h-3.5" /> 添加实例
           </button>
         </div>
@@ -142,77 +136,57 @@ export function Settings() {
             </div>
           )}
           {cfg.instances.map((inst, i) => (
-            <div key={i} className="rounded-xl border bg-card p-5 space-y-4">
+            <div key={i} className="rounded-xl border bg-card shadow-sm p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-muted-foreground">实例 {i + 1}</span>
-                <button
-                  onClick={() => removeInstance(i)}
-                  className="p-1.5 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">实例 {i + 1}</span>
+                <button onClick={() => removeInstance(i)}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">名称</label>
-                  <input
-                    value={inst.name}
-                    onChange={e => setInstance(i, 'name', e.target.value)}
-                    placeholder="vps-hk"
-                    className="h-9 w-full rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
+                  <input value={inst.name} onChange={e => setInstance(i, 'name', e.target.value)}
+                    placeholder="vps-hk" className={`${inputCls} w-full`} />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">API 地址</label>
-                  <input
-                    value={inst.api}
-                    onChange={e => setInstance(i, 'api', e.target.value)}
-                    placeholder="https://your-vps:19090"
-                    className="h-9 w-full rounded-md border bg-background px-3 text-sm font-mono focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
+                  <input value={inst.api} onChange={e => setInstance(i, 'api', e.target.value)}
+                    placeholder="https://your-vps:19090" className={`${inputCls} w-full font-mono text-xs`} />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">
-                  Secret <span className="font-normal">（对应 sing-box api.secret，留空则不认证）</span>
-                </label>
-                <input
-                  type="password"
-                  value={inst.secret}
-                  onChange={e => setInstance(i, 'secret', e.target.value)}
-                  placeholder="留空则不认证"
-                  className="h-9 w-64 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                />
+                <label className="text-xs font-medium text-muted-foreground">Secret <span className="font-normal opacity-60">（留空则不认证）</span></label>
+                <input type="password" value={inst.secret} onChange={e => setInstance(i, 'secret', e.target.value)}
+                  placeholder="留空则不认证" className={`${inputCls} w-64`} />
               </div>
             </div>
           ))}
         </div>
-      </div>
+      </section>
 
       {/* 日志持久化 */}
-      <div>
-        <h2 className="text-base font-semibold mb-1">日志持久化</h2>
-        <p className="text-sm text-muted-foreground mb-4">开启后将日志写入 SQLite，支持历史查询。建议仅持久化 WARN 以上级别以控制写入量。</p>
-        <div className="rounded-xl border bg-card p-5 space-y-4">
+      <section>
+        <div className="mb-3">
+          <h2 className="text-sm font-semibold">日志持久化</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">开启后将日志写入 SQLite，支持历史查询。建议仅持久化 WARN 以上级别。</p>
+        </div>
+        <div className={sectionCls}>
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium">启用持久化</p>
-            <button
-              role="switch"
-              aria-checked={cfg.log_persist_enabled}
+            <button role="switch" aria-checked={cfg.log_persist_enabled}
               onClick={() => setCfg(prev => ({ ...prev, log_persist_enabled: !prev.log_persist_enabled }))}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${cfg.log_persist_enabled ? 'bg-primary' : 'bg-muted'}`}
-            >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${cfg.log_persist_enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${cfg.log_persist_enabled ? 'bg-blue-600' : 'bg-muted'}`}>
+              <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${cfg.log_persist_enabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
             </button>
           </div>
           {cfg.log_persist_enabled && (
             <div className="flex items-center gap-4">
               <label className="text-sm font-medium w-28 shrink-0">最低持久化级别</label>
-              <select
-                value={cfg.log_persist_min_level}
+              <select value={cfg.log_persist_min_level}
                 onChange={e => setCfg(prev => ({ ...prev, log_persist_min_level: e.target.value }))}
-                className="h-9 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-              >
+                className={`${inputCls}`}>
                 {['PANIC', 'FATAL', 'ERROR', 'WARN', 'INFO', 'DEBUG', 'TRACE'].map(l => (
                   <option key={l} value={l}>{l}</option>
                 ))}
@@ -220,56 +194,46 @@ export function Settings() {
             </div>
           )}
         </div>
-      </div>
+      </section>
 
       {/* AI / MCP */}
-      <div>
-        <h2 className="text-base font-semibold mb-1">AI / MCP</h2>
-        <p className="text-sm text-muted-foreground mb-4">启用后可通过 MCP 协议让 AI 直接分析流量和连接数据。</p>
-        <div className="rounded-xl border bg-card p-5 space-y-4">
+      <section>
+        <div className="mb-3">
+          <h2 className="text-sm font-semibold">AI / MCP</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">启用后可通过 MCP 协议让 AI 直接分析流量和连接数据。</p>
+        </div>
+        <div className={sectionCls}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium">MCP Server</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                地址：<span className="font-mono">{window.location.origin}/mcp</span>
-              </p>
+              <p className="text-xs text-muted-foreground mt-0.5 font-mono">{window.location.origin}/mcp</p>
             </div>
-            <button
-              role="switch"
-              aria-checked={cfg.mcp_enabled}
+            <button role="switch" aria-checked={cfg.mcp_enabled}
               onClick={() => setCfg(prev => ({ ...prev, mcp_enabled: !prev.mcp_enabled }))}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 ${cfg.mcp_enabled ? 'bg-primary' : 'bg-muted'}`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${cfg.mcp_enabled ? 'translate-x-6' : 'translate-x-1'}`}
-              />
+              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${cfg.mcp_enabled ? 'bg-blue-600' : 'bg-muted'}`}>
+              <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${cfg.mcp_enabled ? 'translate-x-4' : 'translate-x-0.5'}`} />
             </button>
           </div>
           <MCPTokenSection />
         </div>
-      </div>
+      </section>
 
       {/* 修改密码 */}
       <ChangePasswordSection />
 
       {/* 操作按钮 */}
-      <div className="flex items-center gap-3 pt-2">
-        <button
-          onClick={save}
-          disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
-        >
+      <div className="flex items-center gap-3 pt-1">
+        <button onClick={save} disabled={saving}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium disabled:opacity-50 transition-colors">
           <Save className="w-4 h-4" />
           {saving ? '保存中...' : '保存'}
         </button>
-        <button
-          onClick={reset}
-          className="flex items-center gap-2 px-4 py-2 rounded-md border text-sm text-muted-foreground hover:bg-accent transition-colors"
-        >
+        <button onClick={reset}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg border text-sm text-muted-foreground hover:bg-accent transition-colors">
           <RotateCcw className="w-4 h-4" /> 重置
         </button>
         {msg && (
-          <span className={`text-sm ${msg.type === 'ok' ? 'text-emerald-600' : 'text-red-500'}`}>
+          <span className={`text-xs ${msg.type === 'ok' ? 'text-emerald-500' : 'text-red-500'}`}>
             {msg.text}
           </span>
         )}
@@ -327,19 +291,18 @@ function MCPTokenSection() {
     <div className="space-y-1.5">
       <label className="text-xs font-medium text-muted-foreground">API Token（Bearer）</label>
       <div className="flex items-center gap-2">
-        <input
-          readOnly
-          value={token}
-          className="h-8 flex-1 rounded-md border bg-muted px-3 text-xs font-mono focus:outline-none"
-        />
-        <button onClick={copy} className="p-1.5 rounded-md border hover:bg-accent transition-colors" title="复制">
+        <input readOnly value={token}
+          className="h-8 flex-1 rounded-lg border bg-muted px-3 text-xs font-mono focus:outline-none" />
+        <button onClick={copy}
+          className="p-1.5 rounded-lg border hover:bg-accent transition-colors" title="复制">
           <Copy className="w-3.5 h-3.5" />
         </button>
-        <button onClick={regenerate} disabled={regenerating} className="p-1.5 rounded-md border hover:bg-accent transition-colors disabled:opacity-50" title="重新生成">
+        <button onClick={regenerate} disabled={regenerating}
+          className="p-1.5 rounded-lg border hover:bg-accent transition-colors disabled:opacity-50" title="重新生成">
           <RefreshCw className={`w-3.5 h-3.5 ${regenerating ? 'animate-spin' : ''}`} />
         </button>
       </div>
-      {copied && <p className="text-xs text-emerald-600">已复制</p>}
+      {copied && <p className="text-xs text-emerald-500">已复制</p>}
     </div>
   )
 }
@@ -354,14 +317,8 @@ function ChangePasswordSection() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setMsg(null)
-    if (newPwd !== confirm) {
-      setMsg({ type: 'err', text: '两次输入的密码不一致' })
-      return
-    }
-    if (newPwd.length < 4) {
-      setMsg({ type: 'err', text: '新密码至少 4 位' })
-      return
-    }
+    if (newPwd !== confirm) { setMsg({ type: 'err', text: '两次输入的密码不一致' }); return }
+    if (newPwd.length < 4) { setMsg({ type: 'err', text: '新密码至少 4 位' }); return }
     setSaving(true)
     try {
       const res = await fetch('/api/auth/password', {
@@ -383,11 +340,15 @@ function ChangePasswordSection() {
     }
   }
 
+  const inputCls = 'h-9 rounded-lg border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors'
+
   return (
-    <div>
-      <h2 className="text-base font-semibold mb-1">修改密码</h2>
-      <p className="text-sm text-muted-foreground mb-4">默认账号 admin / admin，建议修改。</p>
-      <form onSubmit={submit} className="rounded-xl border bg-card p-5 space-y-4">
+    <section>
+      <div className="mb-3">
+        <h2 className="text-sm font-semibold">修改密码</h2>
+        <p className="text-xs text-muted-foreground mt-0.5">默认账号 admin / admin，建议修改。</p>
+      </div>
+      <form onSubmit={submit} className="rounded-xl border bg-card shadow-sm p-5 space-y-4">
         {[
           { label: '当前密码', value: oldPwd, set: setOldPwd },
           { label: '新密码', value: newPwd, set: setNewPwd },
@@ -395,25 +356,18 @@ function ChangePasswordSection() {
         ].map(({ label, value, set }) => (
           <div key={label} className="flex items-center gap-4">
             <label className="text-sm font-medium w-28 shrink-0">{label}</label>
-            <input
-              type="password"
-              value={value}
-              onChange={e => set(e.target.value)}
-              className="h-9 w-64 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-            />
+            <input type="password" value={value} onChange={e => set(e.target.value)}
+              className={`${inputCls} w-56`} />
           </div>
         ))}
         <div className="flex items-center gap-3">
-          <button
-            type="submit"
-            disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
-          >
+          <button type="submit" disabled={saving}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium disabled:opacity-50 transition-colors">
             {saving ? '保存中...' : '修改密码'}
           </button>
-          {msg && <span className={`text-sm ${msg.type === 'ok' ? 'text-emerald-600' : 'text-red-500'}`}>{msg.text}</span>}
+          {msg && <span className={`text-xs ${msg.type === 'ok' ? 'text-emerald-500' : 'text-red-500'}`}>{msg.text}</span>}
         </div>
       </form>
-    </div>
+    </section>
   )
 }

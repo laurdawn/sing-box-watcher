@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Legend, ReferenceArea,
+  Tooltip, ResponsiveContainer, ReferenceArea,
 } from 'recharts'
 import { api, TrafficPoint } from '@/lib/api'
 import { formatBytes } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 
 interface Props {
   instance: string
@@ -30,7 +31,6 @@ export function TrafficChart({ instance, onRangeSelect }: Props) {
   const [range, setRange] = useState<Range>('1h')
   const [points, setPoints] = useState<TrafficPoint[]>([])
 
-  // drag selection state
   const [dragStart, setDragStart] = useState<number | null>(null)
   const [dragEnd, setDragEnd] = useState<number | null>(null)
   const [selection, setSelection] = useState<{ from: number; to: number } | null>(null)
@@ -51,7 +51,6 @@ export function TrafficChart({ instance, onRangeSelect }: Props) {
     return () => clearInterval(t)
   }, [instance, range])
 
-  // clear selection when range changes
   useEffect(() => {
     setDragStart(null)
     setDragEnd(null)
@@ -94,17 +93,14 @@ export function TrafficChart({ instance, onRangeSelect }: Props) {
     : selection?.to
 
   return (
-    <div className="rounded-xl border bg-card p-5 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
+    <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b">
         <div className="flex items-center gap-3">
-          <h3 className="font-medium">流量历史</h3>
+          <h3 className="font-semibold text-sm">流量历史</h3>
           {selection && onRangeSelect && (
             <span className="text-xs text-muted-foreground">
               已选区间 ·{' '}
-              <button
-                onClick={() => setSelection(null)}
-                className="text-primary hover:underline"
-              >
+              <button onClick={() => setSelection(null)} className="text-blue-500 hover:underline">
                 清除
               </button>
             </span>
@@ -115,11 +111,12 @@ export function TrafficChart({ instance, onRangeSelect }: Props) {
             <button
               key={r.value}
               onClick={() => setRange(r.value)}
-              className={`px-3 py-1 text-xs rounded-md transition-colors ${
+              className={cn(
+                'px-3 py-1 text-xs rounded-md transition-colors font-medium',
                 range === r.value
-                  ? 'bg-primary text-primary-foreground'
+                  ? 'bg-blue-600 text-white'
                   : 'text-muted-foreground hover:bg-accent'
-              }`}
+              )}
             >
               {r.label}
             </button>
@@ -127,70 +124,71 @@ export function TrafficChart({ instance, onRangeSelect }: Props) {
         </div>
       </div>
       {onRangeSelect && (
-        <p className="text-xs text-muted-foreground mb-2">拖拽图表选择时间区间，自动筛选连接</p>
+        <p className="text-xs text-muted-foreground px-5 pt-3 -mb-1">拖拽图表选择时间区间，自动筛选连接</p>
       )}
-      <ResponsiveContainer width="100%" height={240}>
-        <AreaChart
-          data={points}
-          margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          style={{ userSelect: 'none' }}
-        >
-          <defs>
-            <linearGradient id="colorUp" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="colorDown" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-          <XAxis
-            dataKey="ts"
-            tickFormatter={ts => formatXTick(ts, range)}
-            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-            axisLine={false}
-            tickLine={false}
-          />
-          <YAxis
-            tickFormatter={v => formatBytes(v)}
-            tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-            axisLine={false}
-            tickLine={false}
-            width={72}
-          />
-          <Tooltip
-            formatter={(v: number, name: string) => [formatBytes(v) + '/s', name === 'upload' ? '上传' : '下载']}
-            labelFormatter={ts => formatXTick(Number(ts), range)}
-            contentStyle={{
-              background: 'hsl(var(--card))',
-              border: '1px solid hsl(var(--border))',
-              borderRadius: '8px',
-              fontSize: 12,
-            }}
-          />
-          <Legend
-            formatter={v => v === 'upload' ? '上传' : '下载'}
-            iconType="circle"
-            iconSize={8}
-          />
-          <Area type="monotone" dataKey="upload" stroke="#6366f1" strokeWidth={2} fill="url(#colorUp)" />
-          <Area type="monotone" dataKey="download" stroke="#10b981" strokeWidth={2} fill="url(#colorDown)" />
-          {selFrom != null && selTo != null && selFrom !== selTo && (
-            <ReferenceArea
-              x1={selFrom}
-              x2={selTo}
-              strokeOpacity={0.3}
-              fill="hsl(var(--primary))"
-              fillOpacity={0.15}
+      <div className="px-2 py-4">
+        <ResponsiveContainer width="100%" height={220}>
+          <AreaChart
+            data={points}
+            margin={{ top: 4, right: 8, left: 0, bottom: 0 }}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            style={{ userSelect: 'none' }}
+          >
+            <defs>
+              <linearGradient id="colorUp" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25} />
+                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="colorDown" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
+                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+            <XAxis
+              dataKey="ts"
+              tickFormatter={ts => formatXTick(ts, range)}
+              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+              axisLine={false}
+              tickLine={false}
+              tickMargin={8}
             />
-          )}
-        </AreaChart>
-      </ResponsiveContainer>
+            <YAxis
+              tickFormatter={v => formatBytes(v)}
+              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+              axisLine={false}
+              tickLine={false}
+              width={68}
+            />
+            <Tooltip
+              formatter={(v: number, name: string) => [formatBytes(v) + '/s', name === 'upload' ? '上传' : '下载']}
+              labelFormatter={ts => formatXTick(Number(ts), range)}
+              contentStyle={{
+                background: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '8px',
+                fontSize: 12,
+                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
+              }}
+            />
+            <Area type="monotone" dataKey="upload" stroke="#3b82f6" strokeWidth={1.5} fill="url(#colorUp)" name="upload" dot={false} />
+            <Area type="monotone" dataKey="download" stroke="#10b981" strokeWidth={1.5} fill="url(#colorDown)" name="download" dot={false} />
+            {selFrom != null && selTo != null && selFrom !== selTo && (
+              <ReferenceArea x1={selFrom} x2={selTo} strokeOpacity={0.3} fill="#3b82f6" fillOpacity={0.12} />
+            )}
+          </AreaChart>
+        </ResponsiveContainer>
+        <div className="flex items-center gap-4 px-3 mt-1">
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="w-3 h-0.5 bg-blue-500 rounded inline-block" />上传
+          </span>
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="w-3 h-0.5 bg-emerald-500 rounded inline-block" />下载
+          </span>
+        </div>
+      </div>
     </div>
   )
 }

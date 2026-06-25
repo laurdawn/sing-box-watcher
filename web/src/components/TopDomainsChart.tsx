@@ -35,7 +35,7 @@ export function TopDomainsChart({ data }: Props) {
               fontSize: 12,
             }}
           />
-          <Bar dataKey="count" fill="#6366f1" radius={[0, 4, 4, 0]} />
+          <Bar dataKey="count" fill="#3b82f6" radius={[0, 4, 4, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
