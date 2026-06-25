@@ -74,23 +74,6 @@ docker compose up -d
 | `listen` | `:8080` | HTTP 监听地址 |
 | `data_dir` | `./data` | 数据库和 GeoIP 文件存放目录 |
 
-## sing-box API 配置
-
-在 sing-box 配置中启用 Clash API：
-
-```json
-{
-  "experimental": {
-    "clash_api": {
-      "external_controller": "0.0.0.0:9090",
-      "secret": "your-secret"
-    }
-  }
-}
-```
-
-然后在 watcher 设置页添加实例，填入 API 地址（如 `http://your-host:9090`）和 secret。
-
 ## AI / MCP 集成
 
 sing-box-watcher 内置 MCP Server，可让支持 MCP 协议的 AI（如 Claude）直接查询和分析数据。

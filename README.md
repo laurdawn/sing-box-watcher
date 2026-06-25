@@ -76,23 +76,6 @@ See `docker-compose.yml` for configuration options.
 | `listen` | `:8080` | HTTP listen address |
 | `data_dir` | `./data` | Directory for database and GeoIP files |
 
-## sing-box API Setup
-
-Enable the Clash API in your sing-box config:
-
-```json
-{
-  "experimental": {
-    "clash_api": {
-      "external_controller": "0.0.0.0:9090",
-      "secret": "your-secret"
-    }
-  }
-}
-```
-
-Then add the instance in the watcher Settings page: fill in the API address (e.g. `http://your-host:9090`) and the secret.
-
 ## AI / MCP Integration
 
 sing-box-watcher ships with a built-in MCP Server, allowing MCP-compatible AI assistants (e.g. Claude) to query and analyze your proxy data directly.
