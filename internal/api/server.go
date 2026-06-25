@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	internalauth "github.com/laurdawn/sing-box-watcher/internal/auth"
 	"github.com/laurdawn/sing-box-watcher/internal/collector"
 	"github.com/laurdawn/sing-box-watcher/internal/config"
 	internalmcp "github.com/laurdawn/sing-box-watcher/internal/mcp"
@@ -21,6 +22,7 @@ type Server struct {
 	settingsMu sync.RWMutex
 	manager    *collector.Manager
 	mcpGate    *mcpGate
+	authStore  *internalauth.Store
 }
 
 // mcpGate holds a swappable MCP handler, returning 503 when disabled.
@@ -54,7 +56,14 @@ func (g *mcpGate) disable() {
 }
 
 func NewServer(cfg *config.Config, db *sql.DB, settings *store.Settings, manager *collector.Manager) *Server {
-	s := &Server{cfg: cfg, db: db, settings: settings, manager: manager, mcpGate: &mcpGate{}}
+	s := &Server{
+		cfg:       cfg,
+		db:        db,
+		settings:  settings,
+		manager:   manager,
+		mcpGate:   &mcpGate{},
+		authStore: internalauth.NewStore(),
+	}
 	if settings.MCPEnabled {
 		s.mcpGate.enable("http://" + cfg.Listen)
 	}
@@ -66,38 +75,58 @@ func (s *Server) Handler(static http.FileSystem) http.Handler {
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Logger)
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins: []string{"*"},
-		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders: []string{"Content-Type", "Authorization"},
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Content-Type", "Authorization"},
+		AllowCredentials: true,
 	}))
 
-	r.Route("/api", func(r chi.Router) {
-		r.Get("/instances", s.handleInstances)
-		r.Get("/traffic", s.handleTraffic)
-		r.Get("/connections", s.handleConnections)
-		r.Get("/connections/active", s.handleActiveConnections)
-		r.Get("/connections/inbounds", s.handleInbounds)
-		r.Get("/connections/outbounds", s.handleOutbounds)
-		r.Get("/stats/top-domains", s.handleTopDomains)
-		r.Get("/stats/top-outbounds", s.handleTopOutbounds)
-		r.Get("/stats/source-regions", s.handleSourceRegions)
-		r.Get("/stats/top-source-ips", s.handleTopSourceIPs)
-		r.Get("/config", s.handleGetConfig)
-		r.Put("/config", s.handleSaveConfig)
-		r.Post("/geo/lookup", s.handleGeoLookup)
-		r.Get("/service/info", s.handleServiceInfo)
-		r.Get("/logs/recent", s.handleRecentLogs)
-		r.Get("/groups", s.handleGroups)
-		r.Get("/groups/outbounds", s.handleGetOutbounds)
-		r.Post("/groups/select", s.handleSelectOutbound)
-		r.Post("/groups/urltest", s.handleURLTest)
+	// public auth endpoints
+	r.Post("/api/auth/login", s.handleLogin)
+
+	// protected API routes
+	r.Group(func(r chi.Router) {
+		r.Use(internalauth.Middleware(s.authStore))
+		r.Route("/api", func(r chi.Router) {
+			r.Get("/instances", s.handleInstances)
+			r.Get("/traffic", s.handleTraffic)
+			r.Get("/connections", s.handleConnections)
+			r.Get("/connections/active", s.handleActiveConnections)
+			r.Get("/connections/inbounds", s.handleInbounds)
+			r.Get("/connections/outbounds", s.handleOutbounds)
+			r.Get("/stats/top-domains", s.handleTopDomains)
+			r.Get("/stats/top-outbounds", s.handleTopOutbounds)
+			r.Get("/stats/source-regions", s.handleSourceRegions)
+			r.Get("/stats/top-source-ips", s.handleTopSourceIPs)
+			r.Get("/config", s.handleGetConfig)
+			r.Put("/config", s.handleSaveConfig)
+			r.Post("/geo/lookup", s.handleGeoLookup)
+			r.Get("/service/info", s.handleServiceInfo)
+			r.Get("/logs/recent", s.handleRecentLogs)
+			r.Get("/groups", s.handleGroups)
+			r.Get("/groups/outbounds", s.handleGetOutbounds)
+			r.Post("/groups/select", s.handleSelectOutbound)
+			r.Post("/groups/urltest", s.handleURLTest)
+			// auth management
+			r.Post("/auth/logout", s.handleLogout)
+			r.Get("/auth/me", s.handleMe)
+			r.Post("/auth/password", s.handleChangePassword)
+			r.Post("/auth/regenerate-mcp-token", s.handleRegenerateMCPToken)
+		})
+		r.Get("/ws/traffic", s.handleWsTraffic)
+		r.Get("/ws/groups", s.handleWsGroups)
+		r.Get("/ws/log", s.handleWsLog)
 	})
 
-	r.Get("/ws/traffic", s.handleWsTraffic)
-	r.Get("/ws/groups", s.handleWsGroups)
-	r.Get("/ws/log", s.handleWsLog)
-
-	r.Mount("/mcp", s.mcpGate)
+	// MCP: Bearer token auth
+	r.Group(func(r chi.Router) {
+		r.Use(internalauth.MCPMiddleware(func() string {
+			s.settingsMu.RLock()
+			defer s.settingsMu.RUnlock()
+			return s.settings.MCPToken
+		}))
+		r.Mount("/mcp", s.mcpGate)
+	})
 
 	if static != nil {
 		r.Handle("/*", http.FileServer(static))
@@ -105,4 +134,5 @@ func (s *Server) Handler(static http.FileSystem) http.Handler {
 
 	return r
 }
+
 

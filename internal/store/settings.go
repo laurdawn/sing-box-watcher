@@ -1,9 +1,13 @@
 package store
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"encoding/json"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // Settings 存储运行时可修改的配置，持久化到 SQLite。
@@ -13,8 +17,10 @@ type Settings struct {
 	GeoDBURL           string     `json:"geo_db_url"`
 	Instances          []Instance `json:"instances"`
 	MCPEnabled         bool       `json:"mcp_enabled"`
+	MCPToken           string     `json:"mcp_token"`
 	LogPersistEnabled  bool       `json:"log_persist_enabled"`
-	LogPersistMinLevel string     `json:"log_persist_min_level"` // 默认 "WARN"
+	LogPersistMinLevel string     `json:"log_persist_min_level"`
+	PasswordHash       string     `json:"password_hash"`
 }
 
 type Instance struct {
@@ -38,15 +44,16 @@ func (s *Settings) RetentionDuration() time.Duration {
 
 func LoadSettings(db *sql.DB, dataDir string) (*Settings, error) {
 	s := &Settings{
-		RetentionDays: 7,
-		GeoDBPath:     dataDir + "/GeoLite2-City.mmdb",
-		Instances:     []Instance{},
+		RetentionDays:      7,
+		GeoDBPath:          dataDir + "/GeoLite2-City.mmdb",
+		Instances:          []Instance{},
+		LogPersistMinLevel: "WARN",
 	}
 	row := db.QueryRow(`SELECT value FROM settings WHERE key = 'config'`)
 	var raw string
 	if err := row.Scan(&raw); err != nil {
 		if err == sql.ErrNoRows {
-			return s, nil
+			return initDefaults(db, s)
 		}
 		return nil, err
 	}
@@ -62,6 +69,41 @@ func LoadSettings(db *sql.DB, dataDir string) (*Settings, error) {
 	if s.Instances == nil {
 		s.Instances = []Instance{}
 	}
+	if s.LogPersistMinLevel == "" {
+		s.LogPersistMinLevel = "WARN"
+	}
+
+	dirty := false
+	if s.PasswordHash == "" {
+		hash, err := bcryptHash("admin")
+		if err != nil {
+			return nil, err
+		}
+		s.PasswordHash = hash
+		dirty = true
+	}
+	if s.MCPToken == "" {
+		s.MCPToken = randomHex(32)
+		dirty = true
+	}
+	if dirty {
+		if err := SaveSettings(db, s); err != nil {
+			return nil, err
+		}
+	}
+	return s, nil
+}
+
+func initDefaults(db *sql.DB, s *Settings) (*Settings, error) {
+	hash, err := bcryptHash("admin")
+	if err != nil {
+		return nil, err
+	}
+	s.PasswordHash = hash
+	s.MCPToken = randomHex(32)
+	if err := SaveSettings(db, s); err != nil {
+		return nil, err
+	}
 	return s, nil
 }
 
@@ -74,3 +116,26 @@ func SaveSettings(db *sql.DB, s *Settings) error {
 ON CONFLICT(key) DO UPDATE SET value = excluded.value`, string(data))
 	return err
 }
+
+func randomHex(n int) string {
+	b := make([]byte, n)
+	_, _ = rand.Read(b)
+	return hex.EncodeToString(b)
+}
+
+func NewMCPToken() string {
+	return randomHex(32)
+}
+
+func bcryptHash(password string) (string, error) {
+	h, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(h), nil
+}
+
+func CheckPassword(hash, password string) bool {
+	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
+}
+

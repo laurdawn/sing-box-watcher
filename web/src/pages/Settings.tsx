@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Plus, Trash2, Save, RotateCcw } from 'lucide-react'
+import { Plus, Trash2, Save, RotateCcw, Copy, RefreshCw } from 'lucide-react'
 
 interface Instance {
   name: string
@@ -245,8 +245,12 @@ export function Settings() {
               />
             </button>
           </div>
+          <MCPTokenSection />
         </div>
       </div>
+
+      {/* 修改密码 */}
+      <ChangePasswordSection />
 
       {/* 操作按钮 */}
       <div className="flex items-center gap-3 pt-2">
@@ -270,6 +274,132 @@ export function Settings() {
           </span>
         )}
       </div>
+    </div>
+  )
+}
+
+function MCPTokenSection() {
+  const [token, setToken] = useState('')
+  const [copied, setCopied] = useState(false)
+  const [regenerating, setRegenerating] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/config').then(r => r.json()).then(d => setToken(d.mcp_token ?? ''))
+  }, [])
+
+  const copy = () => {
+    navigator.clipboard.writeText(token).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
+  const regenerate = async () => {
+    setRegenerating(true)
+    try {
+      const res = await fetch('/api/auth/regenerate-mcp-token', { method: 'POST' })
+      if (res.ok) {
+        const data = await res.json()
+        setToken(data.mcp_token)
+      }
+    } finally {
+      setRegenerating(false)
+    }
+  }
+
+  if (!token) return null
+
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs font-medium text-muted-foreground">API Token（Bearer）</label>
+      <div className="flex items-center gap-2">
+        <input
+          readOnly
+          value={token}
+          className="h-8 flex-1 rounded-md border bg-muted px-3 text-xs font-mono focus:outline-none"
+        />
+        <button onClick={copy} className="p-1.5 rounded-md border hover:bg-accent transition-colors" title="复制">
+          <Copy className="w-3.5 h-3.5" />
+        </button>
+        <button onClick={regenerate} disabled={regenerating} className="p-1.5 rounded-md border hover:bg-accent transition-colors disabled:opacity-50" title="重新生成">
+          <RefreshCw className={`w-3.5 h-3.5 ${regenerating ? 'animate-spin' : ''}`} />
+        </button>
+      </div>
+      {copied && <p className="text-xs text-emerald-600">已复制</p>}
+    </div>
+  )
+}
+
+function ChangePasswordSection() {
+  const [oldPwd, setOldPwd] = useState('')
+  const [newPwd, setNewPwd] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [msg, setMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setMsg(null)
+    if (newPwd !== confirm) {
+      setMsg({ type: 'err', text: '两次输入的密码不一致' })
+      return
+    }
+    if (newPwd.length < 4) {
+      setMsg({ type: 'err', text: '新密码至少 4 位' })
+      return
+    }
+    setSaving(true)
+    try {
+      const res = await fetch('/api/auth/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ old_password: oldPwd, new_password: newPwd }),
+      })
+      if (res.ok) {
+        setMsg({ type: 'ok', text: '密码已修改' })
+        setOldPwd(''); setNewPwd(''); setConfirm('')
+      } else {
+        const text = await res.text()
+        setMsg({ type: 'err', text })
+      }
+    } catch (e) {
+      setMsg({ type: 'err', text: String(e) })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div>
+      <h2 className="text-base font-semibold mb-1">修改密码</h2>
+      <p className="text-sm text-muted-foreground mb-4">默认账号 admin / admin，建议修改。</p>
+      <form onSubmit={submit} className="rounded-xl border bg-card p-5 space-y-4">
+        {[
+          { label: '当前密码', value: oldPwd, set: setOldPwd },
+          { label: '新密码', value: newPwd, set: setNewPwd },
+          { label: '确认新密码', value: confirm, set: setConfirm },
+        ].map(({ label, value, set }) => (
+          <div key={label} className="flex items-center gap-4">
+            <label className="text-sm font-medium w-28 shrink-0">{label}</label>
+            <input
+              type="password"
+              value={value}
+              onChange={e => set(e.target.value)}
+              className="h-9 w-64 rounded-md border bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+        ))}
+        <div className="flex items-center gap-3">
+          <button
+            type="submit"
+            disabled={saving}
+            className="flex items-center gap-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
+          >
+            {saving ? '保存中...' : '修改密码'}
+          </button>
+          {msg && <span className={`text-sm ${msg.type === 'ok' ? 'text-emerald-600' : 'text-red-500'}`}>{msg.text}</span>}
+        </div>
+      </form>
     </div>
   )
 }
