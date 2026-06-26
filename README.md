@@ -74,3 +74,5 @@ cd web && npm run dev         # frontend → http://localhost:5173
 ## License
 
 MIT
+
+首发于 [linux.do](https://linux.do) 论坛
