@@ -45,6 +45,10 @@ func Run(ctx context.Context, db *sql.DB, retention time.Duration) {
 			if _, err := db.Exec("VACUUM"); err != nil {
 				log.Printf("retention: vacuum: %v", err)
 			}
+			// VACUUM rebuilds the DB file and resets journal_mode to DELETE; restore WAL
+			if _, err := db.Exec("PRAGMA journal_mode=WAL"); err != nil {
+				log.Printf("retention: restore wal mode: %v", err)
+			}
 		}
 	}
 }
