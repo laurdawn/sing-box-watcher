@@ -264,6 +264,74 @@ func queryDistinct(db *sql.DB, col, instance string) ([]string, error) {
 	return result, rows.Err()
 }
 
+type TrafficUpdate struct {
+	ID       string
+	Upload   int64
+	Download int64
+}
+
+func BatchUpdateConnectionTraffic(db *sql.DB, updates []TrafficUpdate) error {
+	if len(updates) == 0 {
+		return nil
+	}
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	stmt, err := tx.Prepare(`UPDATE connections SET upload=?, download=? WHERE id=?`)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	defer stmt.Close()
+	for _, u := range updates {
+		if _, err := stmt.Exec(u.Upload, u.Download, u.ID); err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+func BatchInsertConnections(db *sql.DB, conns []*Connection) error {
+	if len(conns) == 0 {
+		return nil
+	}
+	// chunk to stay under SQLite's 999-parameter limit (19 cols × 40 = 760)
+	const chunkSize = 40
+	for i := 0; i < len(conns); i += chunkSize {
+		end := i + chunkSize
+		if end > len(conns) {
+			end = len(conns)
+		}
+		if err := batchInsertChunk(db, conns[i:end]); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func batchInsertChunk(db *sql.DB, conns []*Connection) error {
+	placeholders := make([]string, len(conns))
+	args := make([]any, 0, len(conns)*19)
+	for i, c := range conns {
+		placeholders[i] = "(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+		args = append(args,
+			c.ID, c.Instance, c.Network, c.Inbound, c.InboundType,
+			c.Outbound, c.OutboundType, c.SourceIP, c.SourcePort,
+			c.DestIP, c.DestPort, c.Host, c.ProcessPath, c.Rule, c.Chains,
+			c.Upload, c.Download, c.StartedAt, c.ClosedAt,
+		)
+	}
+	_, err := db.Exec(
+		`INSERT OR IGNORE INTO connections(id, instance, network, inbound, inbound_type, outbound, outbound_type,
+		source_ip, source_port, dest_ip, dest_port, host, process_path, rule, chains,
+		upload, download, started_at, closed_at) VALUES `+strings.Join(placeholders, ","),
+		args...,
+	)
+	return err
+}
+
 func UpdateConnectionTraffic(db *sql.DB, id string, upload, download int64) error {
 	_, err := db.Exec(`UPDATE connections SET upload=?, download=? WHERE id=?`, upload, download, id)
 	return err

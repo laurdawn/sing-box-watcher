@@ -26,9 +26,10 @@ type ConnectionCollector struct {
 	secret   string
 	db       *sql.DB
 
-	mu     sync.RWMutex
-	active map[string]*activeConn
-	dirty  map[string]struct{}
+	mu      sync.RWMutex
+	active  map[string]*activeConn
+	dirty   map[string]struct{}
+	pending []*store.Connection
 }
 
 func NewConnectionCollector(instance, apiURL, secret string, db *sql.DB) *ConnectionCollector {
@@ -39,6 +40,7 @@ func NewConnectionCollector(instance, apiURL, secret string, db *sql.DB) *Connec
 		db:       db,
 		active:   make(map[string]*activeConn),
 		dirty:    make(map[string]struct{}),
+		pending:  nil,
 	}
 }
 
@@ -74,7 +76,7 @@ func (c *ConnectionCollector) connect(ctx context.Context) error {
 	client := daemon.NewStartedServiceClient(conn)
 	authCtx := withAuth(ctx, c.secret)
 
-	stream, err := client.SubscribeConnections(authCtx, &daemon.SubscribeConnectionsRequest{Interval: int64(time.Second)})
+	stream, err := client.SubscribeConnections(authCtx, &daemon.SubscribeConnectionsRequest{Interval: int64(5 * time.Second)})
 	if err != nil {
 		return err
 	}
@@ -111,22 +113,25 @@ func (c *ConnectionCollector) connect(ctx context.Context) error {
 
 func (c *ConnectionCollector) flushDirty() {
 	c.mu.Lock()
-	if len(c.dirty) == 0 {
-		c.mu.Unlock()
-		return
-	}
-	snapshot := make(map[string]activeConn, len(c.dirty))
+	pending := c.pending
+	c.pending = nil
+	var updates []store.TrafficUpdate
 	for id := range c.dirty {
 		if ac, ok := c.active[id]; ok {
-			snapshot[id] = *ac
+			updates = append(updates, store.TrafficUpdate{ID: id, Upload: ac.Upload, Download: ac.Download})
 		}
 	}
 	c.dirty = make(map[string]struct{})
 	c.mu.Unlock()
 
-	for id, ac := range snapshot {
-		if err := store.UpdateConnectionTraffic(c.db, id, ac.Upload, ac.Download); err != nil {
-			log.Printf("[%s] update connection traffic: %v", c.instance, err)
+	if len(pending) > 0 {
+		if err := store.BatchInsertConnections(c.db, pending); err != nil {
+			log.Printf("[%s] batch insert connections: %v", c.instance, err)
+		}
+	}
+	if len(updates) > 0 {
+		if err := store.BatchUpdateConnectionTraffic(c.db, updates); err != nil {
+			log.Printf("[%s] batch update connection traffic: %v", c.instance, err)
 		}
 	}
 }
@@ -157,10 +162,8 @@ func (c *ConnectionCollector) processEvents(msg *daemon.ConnectionEvents) {
 			}
 			c.mu.Lock()
 			c.active[conn.ID] = ac
+			c.pending = append(c.pending, conn)
 			c.mu.Unlock()
-			if err := store.UpsertConnection(c.db, conn); err != nil {
-				log.Printf("[%s] upsert connection error: %v", c.instance, err)
-			}
 
 		case daemon.ConnectionEventType_CONNECTION_EVENT_UPDATE:
 			c.mu.Lock()
