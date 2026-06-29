@@ -7,7 +7,7 @@ import (
 )
 
 func Open(path string) (*sql.DB, error) {
-	db, err := sql.Open("sqlite", path+"?_journal_mode=WAL&_busy_timeout=5000")
+	db, err := sql.Open("sqlite", path+"?_journal_mode=WAL&_busy_timeout=5000&_synchronous=NORMAL&_cache_size=-32000&_temp_store=memory")
 	if err != nil {
 		return nil, err
 	}
@@ -59,6 +59,7 @@ CREATE INDEX IF NOT EXISTS idx_conn_host ON connections(host);
 CREATE INDEX IF NOT EXISTS idx_conn_dest_ip ON connections(dest_ip);
 CREATE INDEX IF NOT EXISTS idx_conn_inbound ON connections(instance, inbound_type);
 CREATE INDEX IF NOT EXISTS idx_conn_outbound ON connections(instance, outbound);
+CREATE INDEX IF NOT EXISTS idx_conn_closed ON connections(closed_at, started_at);
 
 CREATE TABLE IF NOT EXISTS logs (
     id        INTEGER PRIMARY KEY AUTOINCREMENT,

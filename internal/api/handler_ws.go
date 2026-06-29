@@ -27,8 +27,11 @@ func (s *Server) handleWsTraffic(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
+
+	type snapshot struct{ up, down int64 }
+	last := map[string]snapshot{}
 
 	for {
 		select {
@@ -38,14 +41,30 @@ func (s *Server) handleWsTraffic(w http.ResponseWriter, r *http.Request) {
 		}
 
 		stats := s.manager.Stats()
+		changed := len(stats) != len(last)
+		if !changed {
+			for _, st := range stats {
+				prev, ok := last[st.Name]
+				if !ok || st.CurrentUp != prev.up || st.CurrentDown != prev.down {
+					changed = true
+					break
+				}
+			}
+		}
+		if !changed {
+			continue
+		}
+
+		now := time.Now().Unix()
 		payload := make([]trafficPush, 0, len(stats))
 		for _, st := range stats {
 			payload = append(payload, trafficPush{
 				Instance: st.Name,
 				Up:       st.CurrentUp,
 				Down:     st.CurrentDown,
-				TS:       time.Now().Unix(),
+				TS:       now,
 			})
+			last[st.Name] = snapshot{up: st.CurrentUp, down: st.CurrentDown}
 		}
 		data, _ := json.Marshal(payload)
 		if err := conn.WriteMessage(websocket.TextMessage, data); err != nil {

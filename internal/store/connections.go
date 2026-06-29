@@ -264,7 +264,17 @@ func queryDistinct(db *sql.DB, col, instance string) ([]string, error) {
 	return result, rows.Err()
 }
 
+func UpdateConnectionTraffic(db *sql.DB, id string, upload, download int64) error {
+	_, err := db.Exec(`UPDATE connections SET upload=?, download=? WHERE id=?`, upload, download, id)
+	return err
+}
+
 func DeleteOldConnections(db *sql.DB, before int64) error {
 	_, err := db.Exec(`DELETE FROM connections WHERE started_at < ? AND closed_at IS NOT NULL`, before)
+	return err
+}
+
+func DeleteOrphanConnections(db *sql.DB, before int64) error {
+	_, err := db.Exec(`DELETE FROM connections WHERE started_at < ? AND closed_at IS NULL`, before)
 	return err
 }

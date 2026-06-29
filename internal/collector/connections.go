@@ -14,6 +14,12 @@ import (
 	"github.com/laurdawn/sing-box-watcher/internal/store"
 )
 
+type activeConn struct {
+	Upload    int64
+	Download  int64
+	StartedAt int64
+}
+
 type ConnectionCollector struct {
 	instance string
 	apiURL   string
@@ -21,7 +27,8 @@ type ConnectionCollector struct {
 	db       *sql.DB
 
 	mu     sync.RWMutex
-	active map[string]*store.Connection
+	active map[string]*activeConn
+	dirty  map[string]struct{}
 }
 
 func NewConnectionCollector(instance, apiURL, secret string, db *sql.DB) *ConnectionCollector {
@@ -30,7 +37,8 @@ func NewConnectionCollector(instance, apiURL, secret string, db *sql.DB) *Connec
 		apiURL:   apiURL,
 		secret:   secret,
 		db:       db,
-		active:   make(map[string]*store.Connection),
+		active:   make(map[string]*activeConn),
+		dirty:    make(map[string]struct{}),
 	}
 }
 
@@ -73,6 +81,22 @@ func (c *ConnectionCollector) connect(ctx context.Context) error {
 
 	log.Printf("[%s] connections collector connected", c.instance)
 
+	// flush dirty connections to DB every 2 seconds
+	stopFlush := make(chan struct{})
+	defer close(stopFlush)
+	go func() {
+		ticker := time.NewTicker(2 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				c.flushDirty()
+			case <-stopFlush:
+				return
+			}
+		}
+	}()
+
 	for {
 		msg, err := stream.Recv()
 		if err != nil {
@@ -85,15 +109,37 @@ func (c *ConnectionCollector) connect(ctx context.Context) error {
 	}
 }
 
+func (c *ConnectionCollector) flushDirty() {
+	c.mu.Lock()
+	if len(c.dirty) == 0 {
+		c.mu.Unlock()
+		return
+	}
+	snapshot := make(map[string]activeConn, len(c.dirty))
+	for id := range c.dirty {
+		if ac, ok := c.active[id]; ok {
+			snapshot[id] = *ac
+		}
+	}
+	c.dirty = make(map[string]struct{})
+	c.mu.Unlock()
+
+	for id, ac := range snapshot {
+		if err := store.UpdateConnectionTraffic(c.db, id, ac.Upload, ac.Download); err != nil {
+			log.Printf("[%s] update connection traffic: %v", c.instance, err)
+		}
+	}
+}
+
 func (c *ConnectionCollector) processEvents(msg *daemon.ConnectionEvents) {
 	if msg.Reset_ {
-		// 服务端重置，关闭所有已追踪连接
 		c.mu.Lock()
 		now := time.Now().UnixMilli()
-		for id, conn := range c.active {
-			store.CloseConnection(c.db, id, now, conn.Upload, conn.Download)
+		for id, ac := range c.active {
+			store.CloseConnection(c.db, id, now, ac.Upload, ac.Download)
 		}
-		c.active = make(map[string]*store.Connection)
+		c.active = make(map[string]*activeConn)
+		c.dirty = make(map[string]struct{})
 		c.mu.Unlock()
 	}
 
@@ -104,36 +150,41 @@ func (c *ConnectionCollector) processEvents(msg *daemon.ConnectionEvents) {
 			if conn == nil {
 				continue
 			}
+			ac := &activeConn{
+				Upload:    conn.Upload,
+				Download:  conn.Download,
+				StartedAt: conn.StartedAt,
+			}
 			c.mu.Lock()
-			c.active[conn.ID] = conn
+			c.active[conn.ID] = ac
 			c.mu.Unlock()
 			if err := store.UpsertConnection(c.db, conn); err != nil {
 				log.Printf("[%s] upsert connection error: %v", c.instance, err)
 			}
 
-
 		case daemon.ConnectionEventType_CONNECTION_EVENT_UPDATE:
 			c.mu.Lock()
-			if conn, ok := c.active[event.Id]; ok {
-				conn.Upload += event.UplinkDelta
-				conn.Download += event.DownlinkDelta
-				store.UpsertConnection(c.db, conn)
+			if ac, ok := c.active[event.Id]; ok {
+				ac.Upload += event.UplinkDelta
+				ac.Download += event.DownlinkDelta
+				c.dirty[event.Id] = struct{}{}
 			}
 			c.mu.Unlock()
 
 		case daemon.ConnectionEventType_CONNECTION_EVENT_CLOSED:
 			c.mu.Lock()
-			conn, ok := c.active[event.Id]
+			ac, ok := c.active[event.Id]
 			if ok {
 				delete(c.active, event.Id)
+				delete(c.dirty, event.Id)
 			}
 			c.mu.Unlock()
 			if ok {
-				closedAt := event.ClosedAt // proto 已经是毫秒
+				closedAt := event.ClosedAt
 				if closedAt == 0 {
 					closedAt = time.Now().UnixMilli()
 				}
-				store.CloseConnection(c.db, event.Id, closedAt, conn.Upload, conn.Download)
+				store.CloseConnection(c.db, event.Id, closedAt, ac.Upload, ac.Download)
 			}
 		}
 	}
@@ -151,7 +202,6 @@ func protoToStore(instance string, p *daemon.Connection) *store.Connection {
 			processPath = p.ProcessInfo.PackageNames[0]
 		}
 	}
-	// destination 格式为 "ip:port" 或 "domain:port"
 	destIP, destPort := splitAddr(p.Destination)
 	srcIP, srcPort := splitAddr(p.Source)
 
@@ -178,7 +228,7 @@ func protoToStore(instance string, p *daemon.Connection) *store.Connection {
 		Chains:       string(chains),
 		Upload:    p.Uplink,
 		Download:  p.Downlink,
-		StartedAt: p.CreatedAt, // 毫秒
+		StartedAt: p.CreatedAt,
 	}
 }
 
